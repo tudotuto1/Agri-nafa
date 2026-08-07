@@ -1,0 +1,4 @@
+project_id = "zohoxfqbfsxdzgijbooc"
+
+[functions.saisie-vocale]
+verify_jwt = true
