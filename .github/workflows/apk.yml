@@ -112,9 +112,24 @@ jobs:
           path: android/app/build/outputs/apk/release/*.apk
           if-no-files-found: error
 
+      # Publie à chaque compilation, pas seulement sur tag : un build manuel
+      # sort en préversion « build-N », un tag v* en release nommée.
       - name: Publier la Release
-        if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: >-
+            ${{ startsWith(github.ref, 'refs/tags/v')
+                && github.ref_name
+                || format('build-{0}', github.run_number) }}
+          name: >-
+            ${{ startsWith(github.ref, 'refs/tags/v')
+                && format('AgriNafa {0}', github.ref_name)
+                || format('AgriNafa — build de test {0}', github.run_number) }}
+          prerelease: ${{ !startsWith(github.ref, 'refs/tags/v') }}
+          generate_release_notes: ${{ startsWith(github.ref, 'refs/tags/v') }}
+          body: |
+            **Installation sur Android**
+
+            Téléchargez le fichier `.apk`, ouvrez-le, et autorisez
+            l'installation depuis cette source si le téléphone le demande.
           files: android/app/build/outputs/apk/release/*.apk
-          generate_release_notes: true
