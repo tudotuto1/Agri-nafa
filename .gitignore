@@ -1,0 +1,21 @@
+# Secrets — jamais dans un dépôt public
+.env
+.env.local
+.env.*.local
+*.keystore
+*.jks
+
+# Dépendances et build
+node_modules/
+.expo/
+dist/
+web-build/
+
+# Dossiers natifs régénérés par `expo prebuild`
+android/
+ios/
+
+# Divers
+*.log
+npm-debug.*
+.DS_Store

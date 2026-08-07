@@ -1,0 +1,35 @@
+{
+  "expo": {
+    "name": "AgriNafa",
+    "slug": "agrinafa",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "agrinafa",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#009E49"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "bf.agrinafa.app"
+    },
+    "android": {
+      "package": "bf.agrinafa.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#009E49"
+      },
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.CAMERA",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
+    },
+    "plugins": ["expo-router"],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
