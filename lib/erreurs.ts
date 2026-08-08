@@ -18,6 +18,7 @@ const PAR_CONTRAINTE: Record<string, string> = {
   productions_recoltes_quantite_recoltee_check:
     "La quantité récoltée doit être supérieure à zéro.",
   productions_recoltes_qualite_check: "La qualité choisie n'est pas reconnue.",
+  grossistes_note_fiabilite_check: "La note doit être comprise entre 1 et 5 étoiles.",
 };
 
 /**
@@ -70,13 +71,12 @@ export function messageErreurLisible(erreur: PostgrestError, sujet: string): str
     return `Vous n'avez pas le droit d'enregistrer ${sujet}.`;
   }
 
+  // Formulation sans participe accordé : « la dépense » est féminin,
+  // « cet acheteur » masculin. Une tournure impersonnelle évite d'avoir à
+  // transporter le genre de chaque sujet jusqu'ici.
   if (texte.includes("network") || texte.includes("fetch") || texte.includes("timeout")) {
-    return `Pas de connexion. ${majuscule(sujet)} n'a pas été enregistrée.`;
+    return `Pas de connexion. Impossible d'enregistrer ${sujet}.`;
   }
 
   return "Enregistrement impossible. Réessayez dans un instant.";
-}
-
-function majuscule(mots: string): string {
-  return mots.charAt(0).toUpperCase() + mots.slice(1);
 }

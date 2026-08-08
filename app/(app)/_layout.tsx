@@ -9,6 +9,7 @@ export default function DispositionApp() {
       <Stack.Screen name="depense-vocale" />
       <Stack.Screen name="vente" />
       <Stack.Screen name="recolte" />
+      <Stack.Screen name="grossistes" />
       <Stack.Screen name="prevente" />
       <Stack.Screen name="guides" />
     </Stack>

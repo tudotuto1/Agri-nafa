@@ -22,6 +22,54 @@ export function formaterFcfa(montant: number | null | undefined): string {
 }
 
 // -----------------------------------------------------------------------------
+// Téléphone et WhatsApp
+// -----------------------------------------------------------------------------
+
+/** Le Burkina Faso, et rien d'autre : l'application ne s'adresse qu'à lui. */
+export const INDICATIF_BF = "+226";
+export const LONGUEUR_NUMERO_BF = 8;
+
+/** 8 chiffres saisis → numéro international stocké en base : "+22670000000". */
+export function numeroInternational(chiffres: string): string | null {
+  const nettoye = chiffres.replace(/\D/g, "");
+  if (nettoye.length !== LONGUEUR_NUMERO_BF) return null;
+  return `${INDICATIF_BF}${nettoye}`;
+}
+
+/** "+226 70 00 00 00" → "22670000000" : WhatsApp veut des chiffres nus. */
+export function chiffresWhatsapp(numero: string | null): string | null {
+  if (!numero) return null;
+  const nettoye = numero.replace(/\D/g, "");
+  return nettoye.length >= 8 ? nettoye : null;
+}
+
+/**
+ * Les deux URL d'ouverture d'une conversation, dans l'ordre d'essai.
+ * L'application native d'abord ; wa.me ensuite, qui fonctionne même sans
+ * WhatsApp installé — le producteur tombe alors sur la page d'installation
+ * plutôt que sur une erreur muette.
+ */
+export function urlsWhatsapp(
+  numero: string | null,
+): { application: string; web: string } | null {
+  const chiffres = chiffresWhatsapp(numero);
+  if (!chiffres) return null;
+  return {
+    application: `whatsapp://send?phone=${chiffres}`,
+    web: `https://wa.me/${chiffres}`,
+  };
+}
+
+/** Affichage lisible d'un numéro burkinabè : "+226 70 00 00 00". */
+export function formaterTelephone(numero: string | null): string {
+  const chiffres = chiffresWhatsapp(numero);
+  if (!chiffres) return "";
+  const local = chiffres.startsWith("226") ? chiffres.slice(3) : chiffres;
+  const paires = local.match(/\d{2}/g);
+  return paires ? `${INDICATIF_BF} ${paires.join(" ")}` : `${INDICATIF_BF} ${local}`;
+}
+
+// -----------------------------------------------------------------------------
 // Dates
 //
 // La base attend AAAA-MM-JJ ; on saisit et on lit en JJ/MM/AAAA. La conversion
