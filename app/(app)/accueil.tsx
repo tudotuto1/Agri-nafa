@@ -8,7 +8,7 @@
 // =============================================================================
 
 import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 
 import {
@@ -20,9 +20,11 @@ import {
   Erreur,
   SousTitre,
   Squelette,
+  Succes,
   Titre,
 } from "@/components/ui";
 import { CIBLE_TACTILE, couleurs, espaces, rayons, textes } from "@/constants/theme";
+import { formaterFcfa } from "@/lib/format";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 
@@ -54,22 +56,6 @@ type CycleActif = {
 
 const CHAMPS_CYCLE =
   "cycle_id, nom_cycle, speculation, date_debut, date_fin_prevue, jours_avant_fin, benefice_net";
-
-// -----------------------------------------------------------------------------
-// Un montant en francs CFA se lit par tranches de trois chiffres. L'espace
-// utilisé est insécable : « 1 245 500 F » ne doit jamais se couper en fin de
-// ligne, sinon le chiffre devient illisible d'un coup d'œil.
-// -----------------------------------------------------------------------------
-const ESPACE_INSECABLE = " ";
-
-export function formaterFcfa(montant: number | null | undefined): string {
-  const arrondi = Math.round(montant ?? 0);
-  const signe = arrondi < 0 ? "−" : "";
-  const chiffres = Math.abs(arrondi)
-    .toString()
-    .replace(/\B(?=(\d{3})+(?!\d))/g, ESPACE_INSECABLE);
-  return `${signe}${chiffres}${ESPACE_INSECABLE}F`;
-}
 
 // Avancement d'un cycle dans le temps, borné à [0, 1].
 export function avancementCycle(debut: string, fin: string | null): number {
@@ -123,15 +109,39 @@ export default function EcranAccueil() {
     setCycles((resCycles.data ?? []) as CycleActif[]);
   }, []);
 
+  // useFocusEffect et non useEffect : au retour depuis la saisie d'une
+  // dépense, l'accueil est déjà monté et un useEffect ne se rejouerait pas.
+  // Les chiffres resteraient périmés juste après l'action qui les change.
+  useFocusEffect(
+    useCallback(() => {
+      let actif = true;
+      charger().finally(() => {
+        if (actif) setChargement(false);
+      });
+      return () => {
+        actif = false;
+      };
+    }, [charger]),
+  );
+
+  // Confirmation renvoyée par l'écran de saisie.
+  const parametres = useLocalSearchParams<{ depense_enregistree?: string }>();
+  const [confirmation, setConfirmation] = useState<string | null>(null);
+
   useEffect(() => {
-    let actif = true;
-    charger().finally(() => {
-      if (actif) setChargement(false);
-    });
-    return () => {
-      actif = false;
-    };
-  }, [charger]);
+    const montant = parametres.depense_enregistree;
+    if (!montant) return;
+    setConfirmation(montant);
+    // Consommé une fois : sans ça, la confirmation reviendrait à chaque
+    // retour sur l'accueil.
+    router.setParams({ depense_enregistree: "" });
+  }, [parametres.depense_enregistree, router]);
+
+  useEffect(() => {
+    if (!confirmation) return;
+    const minuteur = setTimeout(() => setConfirmation(null), 6000);
+    return () => clearTimeout(minuteur);
+  }, [confirmation]);
 
   const rafraichir = useCallback(async () => {
     setRafraichissement(true);
@@ -164,6 +174,14 @@ export default function EcranAccueil() {
           />
         ) : null}
       </View>
+
+      <Succes
+        message={
+          confirmation
+            ? `Dépense de ${formaterFcfa(Number(confirmation))} enregistrée.`
+            : null
+        }
+      />
 
       {chargement ? (
         <SqueletteAccueil />
@@ -225,6 +243,11 @@ export default function EcranAccueil() {
               emoji="🎤"
               libelle="Dicter une dépense"
               onPress={() => router.push("/(app)/depense-vocale")}
+            />
+            <ActionRapide
+              emoji="✍️"
+              libelle="Noter une dépense"
+              onPress={() => router.push("/(app)/depense")}
             />
             <ActionRapide
               emoji="💰"

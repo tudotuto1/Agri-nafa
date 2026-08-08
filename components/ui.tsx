@@ -64,6 +64,50 @@ export function Erreur({ message }: { message: string | null }) {
   );
 }
 
+export function Succes({ message }: { message: string | null }) {
+  if (!message) return null;
+  return (
+    <View style={styles.succesBoite}>
+      <Text style={styles.succesTexte}>{message}</Text>
+    </View>
+  );
+}
+
+// -----------------------------------------------------------------------------
+// Pilule sélectionnable, pour un choix parmi une liste courte et fermée.
+// Préférée à un menu déroulant : tout est visible d'un coup d'œil, et la cible
+// reste large sous un doigt.
+// -----------------------------------------------------------------------------
+export function Pilule({
+  libelle,
+  emoji,
+  selectionnee,
+  onPress,
+}: {
+  libelle: string;
+  emoji?: string;
+  selectionnee: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ selected: selectionnee }}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.pilule,
+        selectionnee && styles.piluleSelectionnee,
+        pressed && styles.boutonPresse,
+      ]}
+    >
+      {emoji ? <Text style={styles.piluleEmoji}>{emoji}</Text> : null}
+      <Text style={[styles.piluleTexte, selectionnee && styles.piluleTexteSelectionne]}>
+        {libelle}
+      </Text>
+    </Pressable>
+  );
+}
+
 // -----------------------------------------------------------------------------
 type BoutonProps = {
   titre: string;
@@ -359,6 +403,47 @@ const styles = StyleSheet.create({
   erreurTexte: {
     fontSize: textes.corps,
     color: couleurs.rouge,
+  },
+
+  succesBoite: {
+    backgroundColor: "#EAF6EE",
+    borderLeftWidth: 5,
+    borderLeftColor: couleurs.vert,
+    borderRadius: rayons.sm,
+    padding: espaces.md,
+  },
+  succesTexte: {
+    fontSize: textes.corps,
+    fontWeight: "600",
+    color: couleurs.encre,
+  },
+
+  pilule: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: espaces.sm,
+    minHeight: 52,
+    paddingHorizontal: espaces.md,
+    paddingVertical: espaces.sm,
+    borderRadius: rayons.rond,
+    borderWidth: 2,
+    borderColor: couleurs.ligne,
+    backgroundColor: couleurs.blanc,
+  },
+  piluleSelectionnee: {
+    borderColor: couleurs.vert,
+    backgroundColor: couleurs.vert,
+  },
+  piluleEmoji: {
+    fontSize: textes.corps,
+  },
+  piluleTexte: {
+    fontSize: textes.petit,
+    fontWeight: "600",
+    color: couleurs.encre,
+  },
+  piluleTexteSelectionne: {
+    color: couleurs.blanc,
   },
 
   bouton: {
