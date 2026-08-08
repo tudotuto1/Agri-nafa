@@ -128,23 +128,33 @@ export default function EcranAccueil() {
   const parametres = useLocalSearchParams<{
     depense_enregistree?: string;
     vente_enregistree?: string;
+    recolte_enregistree?: string;
   }>();
   const [confirmation, setConfirmation] = useState<string | null>(null);
 
   useEffect(() => {
     const depense = parametres.depense_enregistree;
     const vente = parametres.vente_enregistree;
-    if (!depense && !vente) return;
+    const recolte = parametres.recolte_enregistree;
+    if (!depense && !vente && !recolte) return;
 
-    setConfirmation(
-      vente
-        ? `Vente de ${formaterFcfa(Number(vente))} enregistrée.`
-        : `Dépense de ${formaterFcfa(Number(depense))} enregistrée.`,
-    );
+    if (recolte) setConfirmation(`Récolte de ${recolte} enregistrée.`);
+    else if (vente) setConfirmation(`Vente de ${formaterFcfa(Number(vente))} enregistrée.`);
+    else setConfirmation(`Dépense de ${formaterFcfa(Number(depense))} enregistrée.`);
+
     // Consommées une seule fois : sans ça, la confirmation reviendrait à
     // chaque retour sur l'accueil.
-    router.setParams({ depense_enregistree: "", vente_enregistree: "" });
-  }, [parametres.depense_enregistree, parametres.vente_enregistree, router]);
+    router.setParams({
+      depense_enregistree: "",
+      vente_enregistree: "",
+      recolte_enregistree: "",
+    });
+  }, [
+    parametres.depense_enregistree,
+    parametres.vente_enregistree,
+    parametres.recolte_enregistree,
+    router,
+  ]);
 
   useEffect(() => {
     if (!confirmation) return;
@@ -251,6 +261,11 @@ export default function EcranAccueil() {
               emoji="✍️"
               libelle="Noter une dépense"
               onPress={() => router.push("/(app)/depense")}
+            />
+            <ActionRapide
+              emoji="🧺"
+              libelle="Noter une récolte"
+              onPress={() => router.push("/(app)/recolte")}
             />
             <ActionRapide
               emoji="💰"

@@ -1,13 +1,14 @@
 // =============================================================================
-// Enregistrement d'une vente.
+// Enregistrement d'une récolte.
 //
-// Le total encaissé est affiché en grand sous les deux champs qui le
-// produisent : c'est le seul chiffre que le producteur vérifie avant de
-// valider, et le seul qu'il retiendra.
+// L'écran montre en tête ce que le cycle a déjà produit et ce que chaque kilo
+// a coûté jusqu'ici. Dès qu'une quantité est saisie, le nouveau prix de
+// revient s'affiche à côté de l'ancien : c'est le lien que le producteur doit
+// voir. Ses dépenses se répartissent sur une récolte plus grande, donc chaque
+// kilo lui revient moins cher — et c'est ce chiffre-là qu'il opposera au
+// bana-bana qui lui propose un prix.
 //
-// revenu_total n'est JAMAIS envoyé : c'est une colonne générée par la base
-// (quantite_vendue * prix_unitaire). Toute écriture est rejetée en 428C9.
-// Le total affiché ici n'est qu'un aperçu ; la vérité reste calculée en base.
+// La colonne unite est NOT NULL : elle reprend l'unité de la spéculation.
 // =============================================================================
 
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -16,7 +17,6 @@ import { StyleSheet, Text, TextInput, View } from "react-native";
 
 import {
   Aide,
-  Avertissement,
   Bouton,
   Champ,
   Ecran,
@@ -28,7 +28,7 @@ import {
 } from "@/components/ui";
 import { CIBLE_TACTILE, couleurs, espaces, rayons, textes } from "@/constants/theme";
 import { useAuth } from "@/lib/auth";
-import { useCyclesActifs } from "@/lib/cycles";
+import { prixDeRevientProjete, useCyclesActifs } from "@/lib/cycles";
 import { messageErreurLisible } from "@/lib/erreurs";
 import {
   affichageVersIso,
@@ -41,37 +41,24 @@ import {
 import { supabase } from "@/lib/supabase";
 
 // -----------------------------------------------------------------------------
-// Valeurs de l'enum mode_paiement, dans l'ordre de la base.
+// Valeurs acceptées par la contrainte CHECK de productions_recoltes.
+// La qualité reste facultative : un second appui désélectionne.
 // -----------------------------------------------------------------------------
-type ModePaiement =
-  | "especes"
-  | "orange_money"
-  | "moov_money"
-  | "telecel"
-  | "wave"
-  | "virement"
-  | "credit";
+type Qualite = "premier_choix" | "second_choix" | "ecart_de_tri";
 
-const MODES: { code: ModePaiement; libelle: string; emoji: string }[] = [
-  { code: "especes", libelle: "Espèces", emoji: "💵" },
-  { code: "orange_money", libelle: "Orange Money", emoji: "📱" },
-  { code: "moov_money", libelle: "Moov Money", emoji: "📱" },
-  { code: "telecel", libelle: "Telecel", emoji: "📱" },
-  { code: "wave", libelle: "Wave", emoji: "🌊" },
-  { code: "virement", libelle: "Virement", emoji: "🏦" },
-  { code: "credit", libelle: "Crédit", emoji: "🤝" },
+const QUALITES: { code: Qualite; libelle: string; emoji: string }[] = [
+  { code: "premier_choix", libelle: "Premier choix", emoji: "⭐" },
+  { code: "second_choix", libelle: "Second choix", emoji: "👍" },
+  { code: "ecart_de_tri", libelle: "Écart de tri", emoji: "🥬" },
 ];
 
 // =============================================================================
-export default function EcranVente() {
+export default function EcranRecolte() {
   const router = useRouter();
   const { session } = useAuth();
 
   const [quantite, setQuantite] = useState("");
-  const [prix, setPrix] = useState("");
-  const [client, setClient] = useState("");
-  const [mode, setMode] = useState<ModePaiement>("especes");
-  const [acompte, setAcompte] = useState("");
+  const [qualite, setQualite] = useState<Qualite | null>(null);
   const [cycleId, setCycleId] = useState<string | null>(null);
   const [dateSaisie, setDateSaisie] = useState(isoVersAffichage(aujourdhuiIso()));
 
@@ -79,96 +66,72 @@ export default function EcranVente() {
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
 
-  // Un seul cycle : aucun choix à faire, le champ reste masqué.
   useEffect(() => {
     if (cycles.length === 1) setCycleId(cycles[0].id);
   }, [cycles]);
 
-  // ---------------------------------------------------------------------------
   const cycleChoisi = useMemo(
     () => cycles.find((c) => c.id === cycleId) ?? null,
     [cycles, cycleId],
   );
 
   const quantiteNombre = Number(quantite || "0");
-  const prixNombre = Number(prix || "0");
-  const acompteNombre = Number(acompte || "0");
-  const total = quantiteNombre * prixNombre;
-
   const dateIso = useMemo(() => affichageVersIso(dateSaisie), [dateSaisie]);
   const dateInvalide = dateSaisie.trim().length > 0 && dateIso === null;
 
-  // Garde-fou métier, volontairement non bloquant : le producteur peut vendre
-  // sur pied, ou n'avoir pas encore saisi sa récolte. Il en sait plus que
-  // l'application — on l'informe, on ne lui interdit rien.
-  const alerteStock = useMemo(() => {
-    if (!cycleChoisi || quantiteNombre <= 0) return null;
-    const restant = cycleChoisi.quantiteRestante;
-    if (restant === null || quantiteNombre <= restant) return null;
-
-    const u = cycleChoisi.unite;
-    return restant === 0
-      ? `Aucune récolte n'est encore enregistrée sur ce cycle. Si vous vendez sur pied, continuez : la vente sera enregistrée.`
-      : `Vous vendez ${grouperChiffres(String(quantiteNombre))} ${u} alors que ${grouperChiffres(
-          String(restant),
-        )} ${u} seulement restent en récolte enregistrée. Vente sur pied ou récolte non saisie ? La vente sera enregistrée quand même.`;
-  }, [cycleChoisi, quantiteNombre]);
+  // Prix de revient projeté : les mêmes dépenses réparties sur la récolte
+  // cumulée, cette saisie comprise.
+  const prixDeRevientApres = useMemo(
+    () =>
+      cycleChoisi
+        ? prixDeRevientProjete(
+            cycleChoisi.totalDepenses,
+            cycleChoisi.totalRecolte,
+            quantiteNombre,
+          )
+        : null,
+    [cycleChoisi, quantiteNombre],
+  );
 
   const pret =
-    quantiteNombre > 0 &&
-    prixNombre > 0 &&
-    cycleId !== null &&
-    dateIso !== null &&
-    !envoi;
+    quantiteNombre > 0 && cycleId !== null && dateIso !== null && !envoi;
 
   const enregistrer = useCallback(async () => {
-    if (!pret || !session?.user || !cycleId || !dateIso) return;
+    if (!pret || !session?.user || !cycleId || !dateIso || !cycleChoisi) return;
 
     setEnvoi(true);
     setErreur(null);
 
-    // revenu_total est absent de cet objet, et doit le rester.
-    const { error } = await supabase.from("ventes").insert({
+    const { error } = await supabase.from("productions_recoltes").insert({
       user_id: session.user.id,
       cycle_id: cycleId,
-      client_nom: client.trim() || null,
-      quantite_vendue: quantiteNombre,
-      prix_unitaire: prixNombre,
-      acompte_recu: acompteNombre,
-      mode_paiement: mode,
-      date_vente: dateIso,
+      quantite_recoltee: quantiteNombre,
+      // NOT NULL : on reprend l'unité de la spéculation, jamais une chaîne vide.
+      unite: cycleChoisi.unite,
+      qualite,
+      date_recolte: dateIso,
     });
 
     if (error) {
       setEnvoi(false);
-      setErreur(messageErreurLisible(error, "la vente"));
+      setErreur(messageErreurLisible(error, "la récolte"));
       return;
     }
 
     router.dismissTo({
       pathname: "/(app)/accueil",
-      params: { vente_enregistree: String(total) },
+      params: {
+        recolte_enregistree: `${quantiteNombre} ${cycleChoisi.unite}`,
+      },
     });
-  }, [
-    pret,
-    session,
-    cycleId,
-    dateIso,
-    client,
-    quantiteNombre,
-    prixNombre,
-    acompteNombre,
-    mode,
-    total,
-    router,
-  ]);
+  }, [pret, session, cycleId, dateIso, cycleChoisi, quantiteNombre, qualite, router]);
 
   // ---------------------------------------------------------------------------
   if (chargement) {
     return (
       <Ecran>
-        <Titre>Nouvelle vente</Titre>
-        <Squelette hauteur={90} />
+        <Titre>Noter une récolte</Titre>
+        <Squelette hauteur={80} />
         <Squelette hauteur={90} />
         <Squelette hauteur={110} />
       </Ecran>
@@ -178,13 +141,13 @@ export default function EcranVente() {
   if (cycles.length === 0) {
     return (
       <Ecran>
-        <Titre>Nouvelle vente</Titre>
+        <Titre>Noter une récolte</Titre>
         <View style={styles.vide}>
           <Text style={styles.videEmoji}>🌱</Text>
           <SousTitre>Aucun cycle en cours</SousTitre>
           <Aide>
-            Une vente se rattache toujours à une production. Créez d'abord un
-            cycle, puis revenez enregistrer vos ventes.
+            Une récolte se rattache toujours à une production. Créez d'abord un
+            cycle, puis revenez noter vos récoltes.
           </Aide>
           <Bouton
             titre="Créer un cycle"
@@ -200,11 +163,62 @@ export default function EcranVente() {
 
   return (
     <Ecran>
-      <Titre>Nouvelle vente</Titre>
+      <Titre>Noter une récolte</Titre>
+
+      {/* Contexte : ce que le cycle a déjà produit et ce qu'il a coûté ------- */}
+      {cycleChoisi ? (
+        <View style={styles.contexte}>
+          <View style={styles.contexteLigne}>
+            <Text style={styles.contexteLibelle}>Déjà récolté</Text>
+            <Text style={styles.contexteValeur}>
+              {grouperChiffres(String(cycleChoisi.totalRecolte ?? 0))} {unite}
+            </Text>
+          </View>
+
+          <View style={styles.contexteSeparateur} />
+
+          <View style={styles.contexteLigne}>
+            <Text style={styles.contexteLibelle}>Prix de revient</Text>
+            {cycleChoisi.prixDeRevient !== null ? (
+              <View style={styles.revientLigne}>
+                <Text
+                  style={[
+                    styles.contexteValeur,
+                    prixDeRevientApres !== null && styles.revientAncien,
+                  ]}
+                >
+                  {formaterFcfa(cycleChoisi.prixDeRevient)}/{unite}
+                </Text>
+                {prixDeRevientApres !== null ? (
+                  <>
+                    <Text style={styles.fleche}>→</Text>
+                    <Text style={styles.revientNouveau}>
+                      {formaterFcfa(prixDeRevientApres)}/{unite}
+                    </Text>
+                  </>
+                ) : null}
+              </View>
+            ) : (
+              <Text style={styles.contexteAbsent}>
+                {prixDeRevientApres !== null
+                  ? `${formaterFcfa(prixDeRevientApres)}/${unite} après cette récolte`
+                  : "Pas encore calculable"}
+              </Text>
+            )}
+          </View>
+
+          {prixDeRevientApres !== null ? (
+            <Text style={styles.contexteNote}>
+              Vos dépenses se répartissent sur une récolte plus grande : chaque{" "}
+              {unite} vous revient moins cher.
+            </Text>
+          ) : null}
+        </View>
+      ) : null}
 
       {/* 1. Quantité -------------------------------------------------------- */}
       <View style={styles.blocChiffre}>
-        <Text style={styles.chiffreLibelle}>Quantité vendue</Text>
+        <Text style={styles.chiffreLibelle}>Quantité récoltée</Text>
         <View style={styles.chiffreLigne}>
           <TextInput
             style={styles.chiffreChamp}
@@ -214,80 +228,30 @@ export default function EcranVente() {
             placeholder="0"
             placeholderTextColor={couleurs.ligne}
             autoFocus
-            accessibilityLabel="Quantité vendue"
+            accessibilityLabel="Quantité récoltée"
           />
           <Text style={styles.chiffreUnite}>{unite}</Text>
         </View>
       </View>
 
-      {/* 2. Prix unitaire --------------------------------------------------- */}
-      <View style={styles.blocChiffre}>
-        <Text style={styles.chiffreLibelle}>Prix par {unite}</Text>
-        <View style={styles.chiffreLigne}>
-          <TextInput
-            style={styles.chiffreChamp}
-            value={grouperChiffres(prix)}
-            onChangeText={(v) => setPrix(v.replace(/\D/g, "").slice(0, 9))}
-            keyboardType="number-pad"
-            placeholder="0"
-            placeholderTextColor={couleurs.ligne}
-            accessibilityLabel="Prix unitaire en francs CFA"
-          />
-          <Text style={styles.chiffreUnite}>F</Text>
-        </View>
-      </View>
-
-      {/* Total — le chiffre que le producteur vérifie avant de valider ------ */}
-      <View style={styles.blocTotal}>
-        <Text style={styles.totalLibelle}>Total de la vente</Text>
-        <Text style={styles.totalMontant} adjustsFontSizeToFit numberOfLines={1}>
-          {formaterFcfa(total)}
-        </Text>
-        {quantiteNombre > 0 && prixNombre > 0 ? (
-          <Text style={styles.totalDetail}>
-            {grouperChiffres(String(quantiteNombre))} {unite} ×{" "}
-            {formaterFcfa(prixNombre)}
-          </Text>
-        ) : null}
-      </View>
-
-      <Avertissement message={alerteStock} />
-
-      {/* 3. Client ---------------------------------------------------------- */}
-      <Champ
-        libelle="Client (facultatif)"
-        value={client}
-        onChangeText={setClient}
-        placeholder="Ex. Ali, bana-bana de Sankariaré"
-        autoCapitalize="words"
-      />
-
-      {/* 4. Mode de paiement ------------------------------------------------ */}
+      {/* 2. Qualité — facultative, un second appui désélectionne ------------ */}
       <View style={styles.bloc}>
-        <Text style={styles.libelle}>Comment avez-vous été payé ?</Text>
+        <Text style={styles.libelle}>Qualité (facultatif)</Text>
         <View style={styles.pilules}>
-          {MODES.map((m) => (
+          {QUALITES.map((q) => (
             <Pilule
-              key={m.code}
-              libelle={m.libelle}
-              emoji={m.emoji}
-              selectionnee={mode === m.code}
-              onPress={() => setMode(m.code)}
+              key={q.code}
+              libelle={q.libelle}
+              emoji={q.emoji}
+              selectionnee={qualite === q.code}
+              onPress={() => setQualite(qualite === q.code ? null : q.code)}
             />
           ))}
         </View>
+        <Aide>Appuyez une seconde fois pour retirer votre choix.</Aide>
       </View>
 
-      {/* 5. Acompte --------------------------------------------------------- */}
-      <Champ
-        libelle="Acompte déjà reçu (facultatif)"
-        value={grouperChiffres(acompte)}
-        onChangeText={(v) => setAcompte(v.replace(/\D/g, "").slice(0, 12))}
-        placeholder="0"
-        keyboardType="number-pad"
-      />
-
-      {/* 6. Cycle — masqué s'il n'y en a qu'un ------------------------------ */}
+      {/* 3. Cycle — masqué s'il n'y en a qu'un ------------------------------ */}
       {cycles.length > 1 ? (
         <View style={styles.bloc}>
           <Text style={styles.libelle}>De quel cycle vient cette récolte ?</Text>
@@ -304,10 +268,10 @@ export default function EcranVente() {
         </View>
       ) : null}
 
-      {/* 7. Date ------------------------------------------------------------ */}
+      {/* 4. Date ------------------------------------------------------------ */}
       <View style={styles.bloc}>
         <Champ
-          libelle="Date de la vente"
+          libelle="Date de la récolte"
           value={dateSaisie}
           onChangeText={setDateSaisie}
           placeholder="JJ/MM/AAAA"
@@ -340,7 +304,7 @@ export default function EcranVente() {
       <Erreur message={erreur ?? erreurCycles} />
 
       <Bouton
-        titre="Enregistrer la vente"
+        titre="Enregistrer la récolte"
         onPress={enregistrer}
         desactive={!pret}
         chargement={envoi}
@@ -359,6 +323,60 @@ const styles = StyleSheet.create({
     fontSize: textes.corps,
     fontWeight: "600",
     color: couleurs.encre,
+  },
+
+  contexte: {
+    gap: espaces.sm,
+    padding: espaces.md,
+    borderRadius: rayons.md,
+    backgroundColor: couleurs.blanc,
+    borderWidth: 2,
+    borderColor: couleurs.ligne,
+  },
+  contexteLigne: {
+    gap: espaces.xs,
+  },
+  contexteSeparateur: {
+    height: 2,
+    backgroundColor: couleurs.ligne,
+  },
+  contexteLibelle: {
+    fontSize: textes.petit,
+    color: couleurs.attenue,
+  },
+  contexteValeur: {
+    fontSize: textes.corps,
+    fontWeight: "700",
+    color: couleurs.encre,
+  },
+  contexteAbsent: {
+    fontSize: textes.corps,
+    fontWeight: "700",
+    color: couleurs.vert,
+  },
+  contexteNote: {
+    fontSize: textes.petit,
+    lineHeight: 20,
+    color: couleurs.attenue,
+  },
+  revientLigne: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: espaces.sm,
+  },
+  revientAncien: {
+    color: couleurs.attenue,
+    textDecorationLine: "line-through",
+  },
+  fleche: {
+    fontSize: textes.corps,
+    color: couleurs.attenue,
+  },
+  revientNouveau: {
+    fontSize: textes.corps,
+    fontWeight: "700",
+    color: couleurs.vert,
   },
 
   blocChiffre: {
@@ -390,29 +408,6 @@ const styles = StyleSheet.create({
   chiffreUnite: {
     fontSize: textes.sousTitre,
     fontWeight: "700",
-    color: couleurs.attenue,
-  },
-
-  blocTotal: {
-    gap: espaces.xs,
-    padding: espaces.lg,
-    borderRadius: rayons.lg,
-    backgroundColor: "#EAF6EE",
-    borderWidth: 2,
-    borderColor: couleurs.vert,
-  },
-  totalLibelle: {
-    fontSize: textes.corps,
-    fontWeight: "600",
-    color: couleurs.attenue,
-  },
-  totalMontant: {
-    fontSize: 40,
-    fontWeight: "700",
-    color: couleurs.vert,
-  },
-  totalDetail: {
-    fontSize: textes.petit,
     color: couleurs.attenue,
   },
 

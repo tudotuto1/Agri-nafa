@@ -15,6 +15,9 @@ const PAR_CONTRAINTE: Record<string, string> = {
   ventes_quantite_vendue_check: "La quantité vendue doit être supérieure à zéro.",
   ventes_prix_unitaire_check: "Le prix unitaire ne peut pas être négatif.",
   ventes_acompte_recu_check: "L'acompte ne peut pas être négatif.",
+  productions_recoltes_quantite_recoltee_check:
+    "La quantité récoltée doit être supérieure à zéro.",
+  productions_recoltes_qualite_check: "La qualité choisie n'est pas reconnue.",
 };
 
 /**
@@ -41,7 +44,13 @@ export function messageErreurLisible(erreur: PostgrestError, sujet: string): str
     if (texte.includes("description")) return "La description est obligatoire.";
     if (texte.includes("cycle_id")) return "Choisissez le cycle concerné.";
     if (texte.includes("quantite_vendue")) return "La quantité vendue est obligatoire.";
+    if (texte.includes("quantite_recoltee")) return "La quantité récoltée est obligatoire.";
     if (texte.includes("prix_unitaire")) return "Le prix unitaire est obligatoire.";
+    // unite est NOT NULL : signe que l'unité de la spéculation n'a pas été
+    // résolue, pas d'une faute de saisie.
+    if (texte.includes('"unite"')) {
+      return "L'unité de cette production est introuvable. Réessayez depuis l'accueil.";
+    }
     return "Un champ obligatoire est resté vide.";
   }
 
