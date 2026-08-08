@@ -5,9 +5,10 @@
 // contrastes. Chaque écran doit rester utilisable d'une main, au champ.
 // =============================================================================
 
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useRef } from "react";
 import {
   ActivityIndicator,
+  Animated,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -22,12 +23,18 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { CIBLE_TACTILE, couleurs, espaces, rayons, textes } from "@/constants/theme";
 
 // -----------------------------------------------------------------------------
-export function Ecran({ children }: { children: ReactNode }) {
+type EcranProps = {
+  children: ReactNode;
+  refreshControl?: React.ComponentProps<typeof ScrollView>["refreshControl"];
+};
+
+export function Ecran({ children, refreshControl }: EcranProps) {
   return (
     <SafeAreaView style={styles.ecran} edges={["top", "bottom"]}>
       <ScrollView
         contentContainerStyle={styles.ecranContenu}
         keyboardShouldPersistTaps="handled"
+        refreshControl={refreshControl}
       >
         {children}
       </ScrollView>
@@ -189,6 +196,123 @@ export function EpisDeMil({ etape, total }: { etape: number; total: number }) {
 }
 
 // -----------------------------------------------------------------------------
+// Barre de progression continue, pour l'avancement d'un cycle dans le temps.
+// Distincte des épis de mil, qui jalonnent des étapes discrètes.
+// -----------------------------------------------------------------------------
+export function BarreProgression({
+  avancement,
+  couleur = couleurs.vert,
+}: {
+  avancement: number;
+  couleur?: string;
+}) {
+  const borne = Math.min(Math.max(avancement, 0), 1);
+  return (
+    <View
+      accessibilityRole="progressbar"
+      accessibilityValue={{ min: 0, max: 100, now: Math.round(borne * 100) }}
+      style={styles.barreFond}
+    >
+      <View
+        style={[
+          styles.barreRemplie,
+          { width: `${borne * 100}%`, backgroundColor: couleur },
+        ]}
+      />
+    </View>
+  );
+}
+
+// -----------------------------------------------------------------------------
+export function Badge({
+  texte,
+  ton = "info",
+}: {
+  texte: string;
+  ton?: "info" | "urgent";
+}) {
+  const urgent = ton === "urgent";
+  return (
+    <View style={[styles.badge, urgent && styles.badgeUrgent]}>
+      <Text style={[styles.badgeTexte, urgent && styles.badgeTexteUrgent]}>
+        {texte}
+      </Text>
+    </View>
+  );
+}
+
+// -----------------------------------------------------------------------------
+// Squelette de chargement.
+//
+// Préféré à un spinner plein écran : la page garde sa forme pendant l'attente,
+// donc l'œil sait déjà où regarder quand les chiffres arrivent. Sur une 2G
+// rurale, l'attente se compte en secondes — autant qu'elle soit lisible.
+// -----------------------------------------------------------------------------
+export function Squelette({
+  hauteur = 20,
+  largeur = "100%",
+}: {
+  hauteur?: number;
+  largeur?: number | `${number}%`;
+}) {
+  const pulsation = useRef(new Animated.Value(0.45)).current;
+
+  useEffect(() => {
+    const boucle = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulsation, {
+          toValue: 1,
+          duration: 700,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulsation, {
+          toValue: 0.45,
+          duration: 700,
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    boucle.start();
+    return () => boucle.stop();
+  }, [pulsation]);
+
+  return (
+    <Animated.View
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+      style={[styles.squelette, { height: hauteur, width: largeur, opacity: pulsation }]}
+    />
+  );
+}
+
+// -----------------------------------------------------------------------------
+// Destination provisoire des actions rapides, le temps que chaque écran soit
+// écrit. Un bouton qui ne mène nulle part laisse croire à une panne.
+// -----------------------------------------------------------------------------
+export function EcranAVenir({
+  emoji,
+  titre,
+  explication,
+  onRetour,
+}: {
+  emoji: string;
+  titre: string;
+  explication: string;
+  onRetour: () => void;
+}) {
+  return (
+    <Ecran>
+      <Text style={styles.aVenirEmoji}>{emoji}</Text>
+      <Titre>{titre}</Titre>
+      <Aide>{explication}</Aide>
+      <View style={styles.aVenirPied}>
+        <Bouton titre="Retour" variante="contour" onPress={onRetour} />
+      </View>
+    </Ecran>
+  );
+}
+
+// -----------------------------------------------------------------------------
 export function Attente() {
   return (
     <View style={styles.attente}>
@@ -338,6 +462,50 @@ const styles = StyleSheet.create({
   epiEnCours: {
     height: 24,
     backgroundColor: couleurs.or,
+  },
+
+  barreFond: {
+    height: 10,
+    borderRadius: rayons.rond,
+    backgroundColor: couleurs.ligne,
+    overflow: "hidden",
+  },
+  barreRemplie: {
+    height: "100%",
+    borderRadius: rayons.rond,
+  },
+
+  badge: {
+    minWidth: 30,
+    paddingHorizontal: espaces.sm,
+    paddingVertical: 3,
+    borderRadius: rayons.rond,
+    backgroundColor: couleurs.or,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  badgeUrgent: {
+    backgroundColor: couleurs.rouge,
+  },
+  badgeTexte: {
+    fontSize: textes.petit,
+    fontWeight: "700",
+    color: couleurs.encre,
+  },
+  badgeTexteUrgent: {
+    color: couleurs.blanc,
+  },
+
+  squelette: {
+    borderRadius: rayons.sm,
+    backgroundColor: couleurs.ligne,
+  },
+
+  aVenirEmoji: {
+    fontSize: 56,
+  },
+  aVenirPied: {
+    marginTop: "auto",
   },
 
   attente: {
