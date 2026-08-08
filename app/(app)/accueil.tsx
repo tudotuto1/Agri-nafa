@@ -124,18 +124,27 @@ export default function EcranAccueil() {
     }, [charger]),
   );
 
-  // Confirmation renvoyée par l'écran de saisie.
-  const parametres = useLocalSearchParams<{ depense_enregistree?: string }>();
+  // Confirmations renvoyées par les écrans de saisie.
+  const parametres = useLocalSearchParams<{
+    depense_enregistree?: string;
+    vente_enregistree?: string;
+  }>();
   const [confirmation, setConfirmation] = useState<string | null>(null);
 
   useEffect(() => {
-    const montant = parametres.depense_enregistree;
-    if (!montant) return;
-    setConfirmation(montant);
-    // Consommé une fois : sans ça, la confirmation reviendrait à chaque
-    // retour sur l'accueil.
-    router.setParams({ depense_enregistree: "" });
-  }, [parametres.depense_enregistree, router]);
+    const depense = parametres.depense_enregistree;
+    const vente = parametres.vente_enregistree;
+    if (!depense && !vente) return;
+
+    setConfirmation(
+      vente
+        ? `Vente de ${formaterFcfa(Number(vente))} enregistrée.`
+        : `Dépense de ${formaterFcfa(Number(depense))} enregistrée.`,
+    );
+    // Consommées une seule fois : sans ça, la confirmation reviendrait à
+    // chaque retour sur l'accueil.
+    router.setParams({ depense_enregistree: "", vente_enregistree: "" });
+  }, [parametres.depense_enregistree, parametres.vente_enregistree, router]);
 
   useEffect(() => {
     if (!confirmation) return;
@@ -175,13 +184,7 @@ export default function EcranAccueil() {
         ) : null}
       </View>
 
-      <Succes
-        message={
-          confirmation
-            ? `Dépense de ${formaterFcfa(Number(confirmation))} enregistrée.`
-            : null
-        }
-      />
+      <Succes message={confirmation} />
 
       {chargement ? (
         <SqueletteAccueil />

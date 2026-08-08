@@ -73,6 +73,17 @@ export function Succes({ message }: { message: string | null }) {
   );
 }
 
+// Avertissement : on informe, on n'interdit pas. Réservé aux situations où le
+// producteur en sait plus que l'application — vendre sur pied, par exemple.
+export function Avertissement({ message }: { message: string | null }) {
+  if (!message) return null;
+  return (
+    <View style={styles.avertissementBoite}>
+      <Text style={styles.avertissementTexte}>{message}</Text>
+    </View>
+  );
+}
+
 // -----------------------------------------------------------------------------
 // Pilule sélectionnable, pour un choix parmi une liste courte et fermée.
 // Préférée à un menu déroulant : tout est visible d'un coup d'œil, et la cible
@@ -415,6 +426,19 @@ const styles = StyleSheet.create({
   succesTexte: {
     fontSize: textes.corps,
     fontWeight: "600",
+    color: couleurs.encre,
+  },
+
+  avertissementBoite: {
+    backgroundColor: "#FFF8E1",
+    borderLeftWidth: 5,
+    borderLeftColor: couleurs.or,
+    borderRadius: rayons.sm,
+    padding: espaces.md,
+  },
+  avertissementTexte: {
+    fontSize: textes.petit,
+    lineHeight: 22,
     color: couleurs.encre,
   },
 

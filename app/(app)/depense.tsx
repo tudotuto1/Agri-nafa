@@ -13,7 +13,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "expo-router";
 import { StyleSheet, Text, TextInput, View } from "react-native";
-import type { PostgrestError } from "@supabase/supabase-js";
 
 import {
   Aide,
@@ -35,6 +34,7 @@ import {
   grouperChiffres,
   isoVersAffichage,
 } from "@/lib/format";
+import { messageErreurLisible } from "@/lib/erreurs";
 import { supabase } from "@/lib/supabase";
 
 // -----------------------------------------------------------------------------
@@ -63,45 +63,6 @@ const CATEGORIES: { code: Categorie; libelle: string; emoji: string }[] = [
 ];
 
 type CycleActif = { id: string; nom: string };
-
-// -----------------------------------------------------------------------------
-// Traduction des erreurs de contrainte.
-//
-// Les noms de contraintes viennent du schéma réel, pas d'une supposition. Un
-// message Postgres brut affiché à un maraîcher n'est pas une information :
-// c'est un mur.
-// -----------------------------------------------------------------------------
-export function messageErreurLisible(erreur: PostgrestError): string {
-  const texte = `${erreur.message ?? ""} ${erreur.details ?? ""}`.toLowerCase();
-
-  if (erreur.code === "23514") {
-    if (texte.includes("depenses_montant_total_check")) {
-      return "Le montant ne peut pas être négatif.";
-    }
-    return "Cette dépense ne respecte pas une règle de saisie. Vérifiez le montant.";
-  }
-  if (erreur.code === "23502") {
-    if (texte.includes("description")) return "La description est obligatoire.";
-    if (texte.includes("cycle_id")) return "Choisissez le cycle concerné.";
-    return "Un champ obligatoire est resté vide.";
-  }
-  if (erreur.code === "23503") {
-    return "Le cycle choisi n'existe plus. Revenez en arrière et réessayez.";
-  }
-  if (erreur.code === "22007" || erreur.code === "22008") {
-    return "La date n'est pas comprise. Écrivez-la sous la forme JJ/MM/AAAA.";
-  }
-  if (erreur.code === "22P02") {
-    return "Une valeur saisie n'est pas au bon format.";
-  }
-  if (erreur.code === "42501" || erreur.code === "PGRST301") {
-    return "Vous n'avez pas le droit d'enregistrer cette dépense.";
-  }
-  if (texte.includes("network") || texte.includes("fetch") || texte.includes("timeout")) {
-    return "Pas de connexion. La dépense n'a pas été enregistrée.";
-  }
-  return "Enregistrement impossible. Réessayez dans un instant.";
-}
 
 // =============================================================================
 export default function EcranDepense() {
@@ -174,7 +135,7 @@ export default function EcranDepense() {
 
     if (error) {
       setEnvoi(false);
-      setErreur(messageErreurLisible(error));
+      setErreur(messageErreurLisible(error, "la dépense"));
       return;
     }
 
