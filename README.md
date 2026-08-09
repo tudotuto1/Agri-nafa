@@ -33,11 +33,18 @@ uniquement dans les secrets Supabase, lue côté serveur par l'Edge Function.
 
 ## Base de données
 
-Le dossier `supabase/migrations/` contient les 9 migrations telles qu'elles
-sont appliquées en production : 22 tables, 5 vues analytiques, 69 policies RLS,
-9 fonctions, 57 index, et le référentiel burkinabè (10 spéculations,
+Le dossier `supabase/migrations/` contient les 11 migrations telles qu'elles
+sont appliquées en production : 25 tables, 7 vues analytiques, 72 policies RLS,
+10 fonctions, 63 index, et le référentiel burkinabè (10 spéculations,
 7 marchés, 11 protocoles sanitaires, itinéraire technique de l'aubergine
 Kalenda en 9 étapes).
+
+Les deux dernières migrations enrichissent les guides techniques : doses
+d'intrants, conseils de commercialisation et saisonnalité des prix. Tout ce
+qui se dose y est exprimé **à l'hectare**, et la fonction `dose_pour_surface`
+le ramène à la parcelle réelle. Beaucoup d'exploitations font moins d'un
+demi-hectare : une consigne libellée en sacs pour un hectare ferait sur-doser
+ceux qui cultivent moins, et un mauvais dosage d'engrais coûte une récolte.
 
 ```bash
 supabase link --project-ref <ref>
