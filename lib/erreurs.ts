@@ -19,6 +19,11 @@ const PAR_CONTRAINTE: Record<string, string> = {
     "La quantité récoltée doit être supérieure à zéro.",
   productions_recoltes_qualite_check: "La qualité choisie n'est pas reconnue.",
   grossistes_note_fiabilite_check: "La note doit être comprise entre 1 et 5 étoiles.",
+  fiches_prevente_quantite_prevue_check:
+    "La quantité annoncée doit être supérieure à zéro.",
+  fiches_prevente_prix_demande_check: "Le prix demandé ne peut pas être négatif.",
+  fiches_prevente_acompte_pourcent_check:
+    "L'acompte doit être compris entre 0 et 100 %.",
 };
 
 /**

@@ -94,6 +94,29 @@ export function decalerJours(iso: string, jours: number): string {
   return `${d.getFullYear()}-${mois}-${jour}`;
 }
 
+const MOIS = [
+  "janvier", "février", "mars", "avril", "mai", "juin",
+  "juillet", "août", "septembre", "octobre", "novembre", "décembre",
+];
+const JOURS = [
+  "dimanche", "lundi", "mardi", "mercredi",
+  "jeudi", "vendredi", "samedi",
+];
+
+/**
+ * AAAA-MM-JJ → « mardi 15 septembre ». Les noms sont en dur plutôt que via
+ * Intl : les données de locale sont incomplètes sur beaucoup d'Android
+ * d'entrée de gamme, et un « Tuesday September 15 » dans un message destiné
+ * à un grossiste burkinabè passerait mal.
+ */
+export function dateEnFrancais(iso: string, avecJour = true): string {
+  const [a, m, j] = iso.split("-").map(Number);
+  if (!a || !m || !j) return "";
+  const d = new Date(a, m - 1, j);
+  const jour = avecJour ? `${JOURS[d.getDay()]} ` : "";
+  return `${jour}${j} ${MOIS[m - 1]}`;
+}
+
 /** AAAA-MM-JJ → JJ/MM/AAAA. */
 export function isoVersAffichage(iso: string): string {
   const [a, m, j] = iso.split("-");

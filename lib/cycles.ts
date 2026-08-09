@@ -24,6 +24,10 @@ export type CycleActifDetaille = {
   totalRecolte: number | null;
   totalDepenses: number | null;
   prixDeRevient: number | null;
+  /** Date de fin prévue du cycle, pour proposer une date de disponibilité. */
+  dateFinPrevue: string | null;
+  /** Nom de la spéculation — ce que le producteur annonce à ses acheteurs. */
+  speculation: string | null;
 };
 
 const UNITE_PAR_DEFAUT = "unité";
@@ -68,7 +72,7 @@ export function useCyclesActifs() {
         supabase
           .from("vue_rentabilite_cycles")
           .select(
-            "cycle_id, quantite_restante, total_recolte, total_depenses, prix_de_revient_unitaire",
+            "cycle_id, quantite_restante, total_recolte, total_depenses, prix_de_revient_unitaire, date_fin_prevue, speculation",
           )
           .eq("statut", "actif"),
       ]);
@@ -94,6 +98,8 @@ export function useCyclesActifs() {
         total_recolte: number | null;
         total_depenses: number | null;
         prix_de_revient_unitaire: number | null;
+        date_fin_prevue: string | null;
+        speculation: string | null;
       };
       const agregats = new Map<string, LigneRenta>(
         ((resRenta.data ?? []) as LigneRenta[]).map((r) => [r.cycle_id, r]),
@@ -116,6 +122,8 @@ export function useCyclesActifs() {
           totalRecolte: agg?.total_recolte ?? null,
           totalDepenses: agg?.total_depenses ?? null,
           prixDeRevient: agg?.prix_de_revient_unitaire ?? null,
+          dateFinPrevue: agg?.date_fin_prevue ?? null,
+          speculation: agg?.speculation ?? null,
         };
       });
 
