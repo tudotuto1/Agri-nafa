@@ -326,6 +326,11 @@ export default function EcranAccueil() {
               onPress={() => router.push("/(app)/prevente")}
             />
             <ActionRapide
+              emoji="⭐"
+              libelle="Mon Agri-Score"
+              onPress={() => router.push("/(app)/agri-score")}
+            />
+            <ActionRapide
               emoji="📖"
               libelle="Guides"
               onPress={() => router.push("/(app)/guides")}
