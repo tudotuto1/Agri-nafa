@@ -14,6 +14,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { Attente } from "@/components/ui";
 import { FournisseurAuth, useAuth } from "@/lib/auth";
+import { demarrerEcouteReseau } from "@/lib/file-attente";
 
 function Aiguilleur() {
   const { session, profil, chargement } = useAuth();
@@ -51,6 +52,10 @@ function Aiguilleur() {
 }
 
 export default function DispositionRacine() {
+  // Une file peut avoir survécu à la fermeture de l'application : on l'écoule
+  // au démarrage, puis à chaque retour du réseau.
+  useEffect(() => demarrerEcouteReseau(), []);
+
   return (
     <SafeAreaProvider>
       <FournisseurAuth>

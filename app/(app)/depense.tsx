@@ -35,6 +35,7 @@ import {
   isoVersAffichage,
 } from "@/lib/format";
 import { messageErreurLisible } from "@/lib/erreurs";
+import { ajouter } from "@/lib/file-attente";
 import { supabase } from "@/lib/supabase";
 
 // -----------------------------------------------------------------------------
@@ -122,7 +123,7 @@ export default function EcranDepense() {
     setEnvoi(true);
     setErreur(null);
 
-    const { error } = await supabase.from("depenses").insert({
+    const { enFile, erreur: refus } = await ajouter("depenses", {
       user_id: session.user.id,
       cycle_id: cycleId,
       description: description.trim(),
@@ -133,9 +134,9 @@ export default function EcranDepense() {
       validee: true,
     });
 
-    if (error) {
+    if (refus) {
       setEnvoi(false);
-      setErreur(messageErreurLisible(error, "la dépense"));
+      setErreur(messageErreurLisible(refus, "la dépense"));
       return;
     }
 
@@ -143,7 +144,10 @@ export default function EcranDepense() {
     // copie ; le paramètre porte la confirmation du montant enregistré.
     router.dismissTo({
       pathname: "/(app)/accueil",
-      params: { depense_enregistree: String(montantNombre) },
+      params: {
+        depense_enregistree: String(montantNombre),
+        en_attente: enFile ? "1" : "",
+      },
     });
   }, [pret, session, cycleId, dateIso, description, categorie, montantNombre, router]);
 

@@ -30,6 +30,7 @@ import { CIBLE_TACTILE, couleurs, espaces, rayons, textes } from "@/constants/th
 import { useAuth } from "@/lib/auth";
 import { useCyclesActifs } from "@/lib/cycles";
 import { messageErreurLisible } from "@/lib/erreurs";
+import { ajouter } from "@/lib/file-attente";
 import {
   affichageVersIso,
   aujourdhuiIso,
@@ -128,7 +129,7 @@ export default function EcranVente() {
     setErreur(null);
 
     // revenu_total est absent de cet objet, et doit le rester.
-    const { error } = await supabase.from("ventes").insert({
+    const { enFile, erreur: refus } = await ajouter("ventes", {
       user_id: session.user.id,
       cycle_id: cycleId,
       client_nom: client.trim() || null,
@@ -139,15 +140,18 @@ export default function EcranVente() {
       date_vente: dateIso,
     });
 
-    if (error) {
+    if (refus) {
       setEnvoi(false);
-      setErreur(messageErreurLisible(error, "la vente"));
+      setErreur(messageErreurLisible(refus, "la vente"));
       return;
     }
 
     router.dismissTo({
       pathname: "/(app)/accueil",
-      params: { vente_enregistree: String(total) },
+      params: {
+        vente_enregistree: String(total),
+        en_attente: enFile ? "1" : "",
+      },
     });
   }, [
     pret,

@@ -25,6 +25,8 @@ import {
 } from "@/components/ui";
 import { espaces } from "@/constants/theme";
 import { useAuth } from "@/lib/auth";
+import { ajouter } from "@/lib/file-attente";
+import { messageErreurLisible } from "@/lib/erreurs";
 import { supabase, type Speculation } from "@/lib/supabase";
 
 type TypeCycle = "culture" | "elevage";
@@ -91,34 +93,37 @@ export default function EcranPremierCycle() {
       ? new Date(debut.getTime() + choix.duree_cycle_jours * 86_400_000)
       : null;
 
-    const { data: cycle, error: errCycle } = await supabase
-      .from("cycles_production")
-      .insert({
-        user_id: session.user.id,
-        nom: choix.nom,
-        type,
-        speculation_id: choix.id,
-        date_debut: debut.toISOString().slice(0, 10),
-        date_fin_prevue: finPrevue ? finPrevue.toISOString().slice(0, 10) : null,
-        effectif_initial: effectifRequis ? Number(effectif) : null,
-        statut: "actif",
-      })
-      .select("id")
-      .single();
+    const {
+      id: cycleId,
+      enFile,
+      erreur: refus,
+    } = await ajouter("cycles_production", {
+      user_id: session.user.id,
+      nom: choix.nom,
+      type,
+      speculation_id: choix.id,
+      date_debut: debut.toISOString().slice(0, 10),
+      date_fin_prevue: finPrevue ? finPrevue.toISOString().slice(0, 10) : null,
+      effectif_initial: effectifRequis ? Number(effectif) : null,
+      statut: "actif",
+    });
 
-    if (errCycle || !cycle) {
+    if (refus) {
       setEnvoi(false);
-      setErreur(errCycle?.message ?? "Création du cycle impossible.");
+      setErreur(messageErreurLisible(refus, "ce cycle"));
       return;
     }
 
     // Projette le protocole sanitaire type sur des dates réelles : les 7 actes
     // du calendrier volaille deviennent des rendez-vous datés, du premier
     // anti-stress au contrôle de poids.
-    if (type === "elevage") {
+    //
+    // Inutile de tenter l'appel si le cycle attend encore sur le téléphone :
+    // la fonction s'exécute en base, sur une ligne qui n'y est pas.
+    if (type === "elevage" && !enFile) {
       const { error: errCalendrier } = await supabase.rpc(
         "generer_calendrier_sanitaire",
-        { p_cycle_id: cycle.id },
+        { p_cycle_id: cycleId },
       );
       // Un calendrier manquant ne doit pas bloquer l'inscription : il pourra
       // être régénéré depuis la fiche du cycle.
@@ -134,7 +139,14 @@ export default function EcranPremierCycle() {
 
     setEnvoi(false);
     if (errProfil) {
-      setErreur(errProfil.message);
+      // Une mise à jour ne se met pas en file : seules les insertions le
+      // peuvent. L'inscription s'achève donc en ligne — ce qui n'a rien
+      // d'absurde, le code SMS de l'étape précédente exigeait déjà du réseau.
+      setErreur(
+        enFile
+          ? "Votre cycle est gardé sur le téléphone. Reconnectez-vous pour terminer l'inscription."
+          : messageErreurLisible(errProfil, "votre profil"),
+      );
       return;
     }
 

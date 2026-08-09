@@ -30,6 +30,7 @@ import { CIBLE_TACTILE, couleurs, espaces, rayons, textes } from "@/constants/th
 import { useAuth } from "@/lib/auth";
 import { useCyclesActifs } from "@/lib/cycles";
 import { messageErreurLisible } from "@/lib/erreurs";
+import { ajouter } from "@/lib/file-attente";
 import {
   affichageVersIso,
   aujourdhuiIso,
@@ -68,6 +69,7 @@ export default function EcranPrevente() {
   const [grossistes, setGrossistes] = useState<Grossiste[]>([]);
   const [choixAcheteur, setChoixAcheteur] = useState(false);
   const [ficheId, setFicheId] = useState<string | null>(null);
+  const [enFileAttente, setEnFileAttente] = useState(false);
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
   const [confirmation, setConfirmation] = useState<string | null>(null);
@@ -155,34 +157,32 @@ export default function EcranPrevente() {
     if (ficheId) return ficheId;
     if (!session?.user || !cycleId || !dateIso) return null;
 
-    const { data, error } = await supabase
-      .from("fiches_prevente")
-      .insert({
-        user_id: session.user.id,
-        cycle_id: cycleId,
-        quantite_prevue: quantiteNombre,
-        unite,
-        date_disponibilite: dateIso,
-        prix_demande: prixNombre,
-        lieu_enlevement: lieu.trim() || null,
-        acompte_pourcent: acomptePourcent,
-        texte_genere: texte,
-        canaux: ["whatsapp"],
-        // capture_id reste vide : la photo de caméra viendra plus tard.
-      })
-      .select("id")
-      .single();
+    // publiee_at part dans l'insertion, pas dans une mise à jour ultérieure :
+    // la fiche est créée au moment même du partage, et une mise à jour ne
+    // saurait pas attendre le réseau — seules les insertions se mettent en
+    // file. Un aller-retour de moins, et rien à rattraper hors ligne.
+    const { id, enFile, erreur: refus } = await ajouter("fiches_prevente", {
+      user_id: session.user.id,
+      cycle_id: cycleId,
+      quantite_prevue: quantiteNombre,
+      unite,
+      date_disponibilite: dateIso,
+      prix_demande: prixNombre,
+      lieu_enlevement: lieu.trim() || null,
+      acompte_pourcent: acomptePourcent,
+      texte_genere: texte,
+      canaux: ["whatsapp"],
+      publiee_at: new Date().toISOString(),
+      // capture_id reste vide : la photo de caméra viendra plus tard.
+    });
 
-    if (error || !data) {
-      setErreur(
-        error
-          ? messageErreurLisible(error, "cette fiche")
-          : "Enregistrement de la fiche impossible.",
-      );
+    if (refus) {
+      setErreur(messageErreurLisible(refus, "cette fiche"));
       return null;
     }
-    setFicheId(data.id as string);
-    return data.id as string;
+    setEnFileAttente(enFile);
+    setFicheId(id);
+    return id;
   }, [
     ficheId,
     session,
@@ -217,19 +217,6 @@ export default function EcranPrevente() {
         ? `${chiffres.web}?text=${encode}`
         : `https://wa.me/?text=${encode}`;
 
-      // publiee_at marque le moment du partage, pas celui de la saisie : une
-      // fiche rédigée mais jamais envoyée n'a rien publié.
-      const { error } = await supabase
-        .from("fiches_prevente")
-        .update({ publiee_at: new Date().toISOString() })
-        .eq("id", id);
-
-      if (error) {
-        setEnvoi(false);
-        setErreur(messageErreurLisible(error, "cette fiche"));
-        return;
-      }
-
       try {
         await Linking.openURL(application);
       } catch {
@@ -244,9 +231,13 @@ export default function EcranPrevente() {
 
       setEnvoi(false);
       setChoixAcheteur(false);
-      setConfirmation("Fiche enregistrée et partagée.");
+      setConfirmation(
+        enFileAttente
+          ? "Message partagé. La fiche est gardée sur le téléphone et partira au retour du réseau."
+          : "Fiche enregistrée et partagée.",
+      );
     },
-    [pret, assurerFiche, texte],
+    [pret, assurerFiche, texte, enFileAttente],
   );
 
   useEffect(() => {

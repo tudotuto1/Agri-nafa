@@ -39,6 +39,7 @@ import {
 import { CIBLE_TACTILE, couleurs, espaces, rayons, textes } from "@/constants/theme";
 import { useAuth } from "@/lib/auth";
 import { messageErreurLisible } from "@/lib/erreurs";
+import { ajouter } from "@/lib/file-attente";
 import {
   INDICATIF_BF,
   LONGUEUR_NUMERO_BF,
@@ -143,7 +144,7 @@ export default function EcranGrossistes() {
     setEnvoi(true);
     setErreur(null);
 
-    const { error } = await supabase.from("grossistes").insert({
+    const { enFile, erreur: refus } = await ajouter("grossistes", {
       user_id: session.user.id,
       nom: nom.trim(),
       telephone_whatsapp: numeroComplet,
@@ -155,12 +156,16 @@ export default function EcranGrossistes() {
     });
 
     setEnvoi(false);
-    if (error) {
-      setErreur(messageErreurLisible(error, "cet acheteur"));
+    if (refus) {
+      setErreur(messageErreurLisible(refus, "cet acheteur"));
       return;
     }
 
-    setConfirmation(`${nom.trim()} ajouté à vos acheteurs.`);
+    setConfirmation(
+      enFile
+        ? `${nom.trim()} gardé sur le téléphone : il partira au retour du réseau.`
+        : `${nom.trim()} ajouté à vos acheteurs.`,
+    );
     reinitialiser();
     setFormulaireOuvert(false);
     await charger();

@@ -30,6 +30,7 @@ import { CIBLE_TACTILE, couleurs, espaces, rayons, textes } from "@/constants/th
 import { useAuth } from "@/lib/auth";
 import { prixDeRevientProjete, useCyclesActifs } from "@/lib/cycles";
 import { messageErreurLisible } from "@/lib/erreurs";
+import { ajouter } from "@/lib/file-attente";
 import {
   affichageVersIso,
   aujourdhuiIso,
@@ -102,7 +103,7 @@ export default function EcranRecolte() {
     setEnvoi(true);
     setErreur(null);
 
-    const { error } = await supabase.from("productions_recoltes").insert({
+    const { enFile, erreur: refus } = await ajouter("productions_recoltes", {
       user_id: session.user.id,
       cycle_id: cycleId,
       quantite_recoltee: quantiteNombre,
@@ -112,9 +113,9 @@ export default function EcranRecolte() {
       date_recolte: dateIso,
     });
 
-    if (error) {
+    if (refus) {
       setEnvoi(false);
-      setErreur(messageErreurLisible(error, "la récolte"));
+      setErreur(messageErreurLisible(refus, "la récolte"));
       return;
     }
 
@@ -122,6 +123,7 @@ export default function EcranRecolte() {
       pathname: "/(app)/accueil",
       params: {
         recolte_enregistree: `${quantiteNombre} ${cycleChoisi.unite}`,
+        en_attente: enFile ? "1" : "",
       },
     });
   }, [pret, session, cycleId, dateIso, cycleChoisi, quantiteNombre, qualite, router]);

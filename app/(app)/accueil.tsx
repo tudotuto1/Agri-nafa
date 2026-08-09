@@ -24,6 +24,7 @@ import {
   Titre,
 } from "@/components/ui";
 import { CIBLE_TACTILE, couleurs, espaces, rayons, textes } from "@/constants/theme";
+import { useFileAttente } from "@/lib/file-attente";
 import { formaterFcfa } from "@/lib/format";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
@@ -77,6 +78,7 @@ function libelleEcheance(jours: number | null): string {
 export default function EcranAccueil() {
   const router = useRouter();
   const { profil, deconnexion } = useAuth();
+  const { enAttente, abandonnees, rejouer } = useFileAttente();
 
   const [bord, setBord] = useState<TableauBord | null>(null);
   const [cycles, setCycles] = useState<CycleActif[]>([]);
@@ -129,6 +131,7 @@ export default function EcranAccueil() {
     depense_enregistree?: string;
     vente_enregistree?: string;
     recolte_enregistree?: string;
+    en_attente?: string;
   }>();
   const [confirmation, setConfirmation] = useState<string | null>(null);
 
@@ -138,9 +141,20 @@ export default function EcranAccueil() {
     const recolte = parametres.recolte_enregistree;
     if (!depense && !vente && !recolte) return;
 
-    if (recolte) setConfirmation(`Récolte de ${recolte} enregistrée.`);
-    else if (vente) setConfirmation(`Vente de ${formaterFcfa(Number(vente))} enregistrée.`);
-    else setConfirmation(`Dépense de ${formaterFcfa(Number(depense))} enregistrée.`);
+    // Une saisie mise en file est enregistrée sur le téléphone, pas en base.
+    // Le dire franchement vaut mieux qu'un « enregistrée » qui laisserait
+    // croire que c'est parti.
+    const quoi = recolte
+      ? `Récolte de ${recolte}`
+      : vente
+        ? `Vente de ${formaterFcfa(Number(vente))}`
+        : `Dépense de ${formaterFcfa(Number(depense))}`;
+
+    setConfirmation(
+      parametres.en_attente
+        ? `${quoi} gardée sur le téléphone. Elle partira au retour du réseau.`
+        : `${quoi} enregistrée.`,
+    );
 
     // Consommées une seule fois : sans ça, la confirmation reviendrait à
     // chaque retour sur l'accueil.
@@ -148,11 +162,13 @@ export default function EcranAccueil() {
       depense_enregistree: "",
       vente_enregistree: "",
       recolte_enregistree: "",
+      en_attente: "",
     });
   }, [
     parametres.depense_enregistree,
     parametres.vente_enregistree,
     parametres.recolte_enregistree,
+    parametres.en_attente,
     router,
   ]);
 
@@ -195,6 +211,33 @@ export default function EcranAccueil() {
       </View>
 
       <Succes message={confirmation} />
+
+      {/* Le producteur doit savoir que ses saisies sont gardées, pas perdues.
+          Discret, mais présent tant que la file n'est pas écoulée. */}
+      {enAttente > 0 ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Renvoyer les saisies en attente"
+          onPress={rejouer}
+          style={({ pressed }) => [styles.bandeauFile, pressed && { opacity: 0.85 }]}
+        >
+          <Text style={styles.bandeauFileIcone}>📡</Text>
+          <Text style={styles.bandeauFileTexte}>
+            {enAttente} saisie{enAttente > 1 ? "s" : ""} en attente d'envoi.
+            Elles partiront au retour du réseau.
+          </Text>
+        </Pressable>
+      ) : null}
+
+      {abandonnees > 0 ? (
+        <View style={styles.bandeauEchec}>
+          <Text style={styles.bandeauFileIcone}>⚠️</Text>
+          <Text style={styles.bandeauFileTexte}>
+            {abandonnees} saisie{abandonnees > 1 ? "s" : ""} n'a pas pu être
+            envoyée. Vos données sont conservées sur le téléphone.
+          </Text>
+        </View>
+      ) : null}
 
       {chargement ? (
         <SqueletteAccueil />
@@ -485,6 +528,35 @@ const styles = StyleSheet.create({
   },
   bloc: {
     gap: espaces.md,
+  },
+  bandeauFile: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: espaces.md,
+    padding: espaces.md,
+    borderRadius: rayons.md,
+    backgroundColor: "#FFF8E1",
+    borderLeftWidth: 5,
+    borderLeftColor: couleurs.or,
+  },
+  bandeauEchec: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: espaces.md,
+    padding: espaces.md,
+    borderRadius: rayons.md,
+    backgroundColor: "#FDECEE",
+    borderLeftWidth: 5,
+    borderLeftColor: couleurs.rouge,
+  },
+  bandeauFileIcone: {
+    fontSize: textes.sousTitre,
+  },
+  bandeauFileTexte: {
+    flex: 1,
+    fontSize: textes.petit,
+    lineHeight: 20,
+    color: couleurs.encre,
   },
   liste: {
     gap: espaces.sm,
