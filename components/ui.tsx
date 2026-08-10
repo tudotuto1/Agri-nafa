@@ -297,6 +297,73 @@ export function Badge({
 }
 
 // -----------------------------------------------------------------------------
+// Barre d'onglets. Défilante : quatre libellés français ne tiennent pas sur la
+// largeur d'un téléphone d'entrée de gamme, et tronquer « Commercialisation »
+// en « Commerc… » ne renseigne personne.
+// -----------------------------------------------------------------------------
+export function Onglets<T extends string>({
+  onglets,
+  actif,
+  onChange,
+}: {
+  onglets: { cle: T; libelle: string; emoji?: string }[];
+  actif: T;
+  onChange: (cle: T) => void;
+}) {
+  return (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.onglets}
+    >
+      {onglets.map((o) => (
+        <Pressable
+          key={o.cle}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: actif === o.cle }}
+          onPress={() => onChange(o.cle)}
+          style={({ pressed }) => [
+            styles.onglet,
+            actif === o.cle && styles.ongletActif,
+            pressed && styles.boutonPresse,
+          ]}
+        >
+          {o.emoji ? <Text style={styles.ongletEmoji}>{o.emoji}</Text> : null}
+          <Text style={[styles.ongletTexte, actif === o.cle && styles.ongletTexteActif]}>
+            {o.libelle}
+          </Text>
+        </Pressable>
+      ))}
+    </ScrollView>
+  );
+}
+
+// -----------------------------------------------------------------------------
+export function CaseACocher({
+  libelle,
+  cochee,
+  onToggle,
+}: {
+  libelle: string;
+  cochee: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked: cochee }}
+      onPress={onToggle}
+      style={({ pressed }) => [styles.caseLigne, pressed && styles.boutonPresse]}
+    >
+      <View style={[styles.caseCarre, cochee && styles.caseCochee]}>
+        {cochee ? <Text style={styles.caseMarque}>✓</Text> : null}
+      </View>
+      <Text style={[styles.caseTexte, cochee && styles.caseTexteCochee]}>{libelle}</Text>
+    </Pressable>
+  );
+}
+
+// -----------------------------------------------------------------------------
 // Squelette de chargement.
 //
 // Préféré à un spinner plein écran : la page garde sa forme pendant l'attente,
@@ -604,6 +671,67 @@ const styles = StyleSheet.create({
   badgeTexteUrgent: {
     color: couleurs.blanc,
   },
+
+  onglets: {
+    flexDirection: "row",
+    gap: espaces.sm,
+    paddingVertical: espaces.xs,
+  },
+  onglet: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: espaces.sm,
+    minHeight: 48,
+    paddingHorizontal: espaces.md,
+    borderRadius: rayons.rond,
+    borderWidth: 2,
+    borderColor: couleurs.ligne,
+    backgroundColor: couleurs.blanc,
+  },
+  ongletActif: {
+    borderColor: couleurs.encre,
+    backgroundColor: couleurs.encre,
+  },
+  ongletEmoji: { fontSize: textes.petit },
+  ongletTexte: {
+    fontSize: textes.petit,
+    fontWeight: "600",
+    color: couleurs.encre,
+  },
+  ongletTexteActif: { color: couleurs.blanc },
+
+  caseLigne: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: espaces.md,
+    paddingVertical: espaces.sm,
+  },
+  caseCarre: {
+    width: 30,
+    height: 30,
+    borderRadius: rayons.sm,
+    borderWidth: 2,
+    borderColor: couleurs.ligne,
+    backgroundColor: couleurs.blanc,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  caseCochee: {
+    borderColor: couleurs.vert,
+    backgroundColor: couleurs.vert,
+  },
+  caseMarque: {
+    fontSize: textes.petit,
+    fontWeight: "700",
+    color: couleurs.blanc,
+  },
+  caseTexte: {
+    flex: 1,
+    fontSize: textes.petit,
+    lineHeight: 22,
+    color: couleurs.encre,
+  },
+  caseTexteCochee: { color: couleurs.attenue },
 
   squelette: {
     borderRadius: rayons.sm,
