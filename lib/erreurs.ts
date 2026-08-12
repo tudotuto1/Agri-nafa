@@ -20,11 +20,23 @@ const PAR_CONTRAINTE: Record<string, string> = {
   productions_recoltes_qualite_check: "La qualité choisie n'est pas reconnue.",
   grossistes_note_fiabilite_check: "La note doit être comprise entre 1 et 5 étoiles.",
   parcelles_superficie_ha_check: "La superficie doit être supérieure à zéro.",
+  cameras_intervalle_minutes_check: "La cadence doit être d'au moins une minute.",
+  cameras_niveau_batterie_check: "Le niveau de batterie doit être compris entre 0 et 100 %.",
+  cameras_statut_check: "Cet état de caméra n'est pas reconnu.",
   fiches_prevente_quantite_prevue_check:
     "La quantité annoncée doit être supérieure à zéro.",
   fiches_prevente_prix_demande_check: "Le prix demandé ne peut pas être négatif.",
   fiches_prevente_acompte_pourcent_check:
     "L'acompte doit être compris entre 0 et 100 %.",
+};
+
+/**
+ * Contraintes d'unicité. Distinctes des contraintes de contrôle : le code n'est
+ * pas le même, et le message non plus — ici rien n'est « invalide », c'est
+ * seulement que la valeur est déjà prise.
+ */
+const PAR_UNICITE: Record<string, string> = {
+  cameras_identifiant_materiel_key: "Cette caméra est déjà enregistrée.",
 };
 
 /**
@@ -45,6 +57,15 @@ export function messageErreurLisible(erreur: PostgrestError, sujet: string): str
       if (texte.includes(contrainte)) return message;
     }
     return `Une valeur saisie n'est pas acceptée. Vérifiez les montants.`;
+  }
+
+  // Doublon. La file d'attente absorbe déjà les collisions de clé primaire —
+  // celles qui arrivent ici sont de vraies valeurs en double, à montrer.
+  if (erreur.code === "23505") {
+    for (const [contrainte, message] of Object.entries(PAR_UNICITE)) {
+      if (texte.includes(contrainte)) return message;
+    }
+    return "Cette valeur est déjà utilisée.";
   }
 
   if (erreur.code === "23502") {

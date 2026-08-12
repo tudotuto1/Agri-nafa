@@ -143,3 +143,66 @@ export function affichageVersIso(affichage: string): string | null {
   }
   return `${annee}-${String(mois).padStart(2, "0")}-${String(jour).padStart(2, "0")}`;
 }
+
+// -----------------------------------------------------------------------------
+// Dates relatives
+// -----------------------------------------------------------------------------
+
+/**
+ * Horodatage → « il y a 2 h ».
+ *
+ * Écrit à la main plutôt qu'avec Intl.RelativeTimeFormat : les données de
+ * locale manquent sur beaucoup d'Android d'entrée de gamme, et le repli
+ * silencieux vers l'anglais donnerait « 2 hours ago » au milieu d'un écran
+ * français.
+ *
+ * L'unité monte dès que le compte atteint la suivante. On ne descend pas sous
+ * la minute : « il y a 3 s » sur une alerte pousse à recharger pour voir si le
+ * chiffre bouge, alors que « à l'instant » clôt la question.
+ *
+ * Une date future renvoie « à l'instant » plutôt qu'un compte négatif : l'heure
+ * du téléphone peut avancer sur celle du serveur, et « il y a −4 min » se lit
+ * comme un bug.
+ */
+export function dateRelative(
+  horodatage: string | null | undefined,
+  maintenant: Date = new Date(),
+): string {
+  if (!horodatage) return "";
+
+  const instant = new Date(horodatage);
+  const ms = instant.getTime();
+  if (!Number.isFinite(ms)) return "";
+
+  const secondes = Math.floor((maintenant.getTime() - ms) / 1000);
+  if (secondes < 60) return "à l'instant";
+
+  const minutes = Math.floor(secondes / 60);
+  if (minutes < 60) return `il y a ${minutes}${ESPACE_INSECABLE}min`;
+
+  const heures = Math.floor(minutes / 60);
+  if (heures < 24) return `il y a ${heures}${ESPACE_INSECABLE}h`;
+
+  const jours = Math.floor(heures / 24);
+  if (jours < 7) return `il y a ${jours}${ESPACE_INSECABLE}jour${jours > 1 ? "s" : ""}`;
+
+  const semaines = Math.floor(jours / 7);
+  if (jours < 30) {
+    return `il y a ${semaines}${ESPACE_INSECABLE}semaine${semaines > 1 ? "s" : ""}`;
+  }
+
+  const mois = Math.floor(jours / 30);
+  if (jours < 365) return `il y a ${mois}${ESPACE_INSECABLE}mois`;
+
+  const annees = Math.floor(jours / 365);
+  return `il y a ${annees}${ESPACE_INSECABLE}an${annees > 1 ? "s" : ""}`;
+}
+
+/** Horodatage ISO → « 15 septembre, 14:30 ». Pour l'horodatage exact d'un cliché. */
+export function horodatageEnFrancais(horodatage: string | null | undefined): string {
+  if (!horodatage) return "";
+  const d = new Date(horodatage);
+  if (!Number.isFinite(d.getTime())) return "";
+  const heure = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  return `${d.getDate()} ${MOIS[d.getMonth()]}, ${heure}`;
+}

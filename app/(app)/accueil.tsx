@@ -203,10 +203,17 @@ export default function EcranAccueil() {
           {profil?.localite ? <Aide>{profil.localite}</Aide> : null}
         </View>
         {bord && bord.alertes_non_lues > 0 ? (
-          <Badge
-            texte={String(bord.alertes_non_lues)}
-            ton={bord.alertes_urgentes > 0 ? "urgent" : "info"}
-          />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Voir vos ${bord.alertes_non_lues} alertes non lues`}
+            onPress={() => router.push("/(app)/alertes")}
+            style={({ pressed }) => (pressed ? { opacity: 0.85 } : null)}
+          >
+            <Badge
+              texte={String(bord.alertes_non_lues)}
+              ton={bord.alertes_urgentes > 0 ? "urgent" : "info"}
+            />
+          </Pressable>
         ) : null}
       </View>
 
@@ -269,6 +276,7 @@ export default function EcranAccueil() {
             <LigneAlerte
               nombre={bord.alertes_non_lues}
               urgentes={bord.alertes_urgentes}
+              onPress={() => router.push("/(app)/alertes")}
             />
           ) : null}
 
@@ -324,6 +332,16 @@ export default function EcranAccueil() {
               emoji="🗺️"
               libelle="Mes parcelles"
               onPress={() => router.push("/(app)/parcelles")}
+            />
+            <ActionRapide
+              emoji="🔔"
+              libelle="Mes alertes"
+              onPress={() => router.push("/(app)/alertes")}
+            />
+            <ActionRapide
+              emoji="📷"
+              libelle="Caméras"
+              onPress={() => router.push("/(app)/cameras")}
             />
             <ActionRapide
               emoji="📋"
@@ -429,16 +447,33 @@ function CarteCycle({ cycle }: { cycle: CycleActif }) {
 }
 
 // -----------------------------------------------------------------------------
-function LigneAlerte({ nombre, urgentes }: { nombre: number; urgentes: number }) {
+function LigneAlerte({
+  nombre,
+  urgentes,
+  onPress,
+}: {
+  nombre: number;
+  urgentes: number;
+  onPress: () => void;
+}) {
   const urgent = urgentes > 0;
   return (
-    <View style={[styles.alerte, urgent && styles.alerteUrgente]}>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Voir vos ${nombre} alertes non lues`}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.alerte,
+        urgent && styles.alerteUrgente,
+        pressed && styles.presse,
+      ]}
+    >
       <Text style={styles.alerteEmoji}>{urgent ? "🔴" : "🔔"}</Text>
       <Text style={styles.alerteTexte}>
         {nombre} alerte{nombre > 1 ? "s" : ""} non lue{nombre > 1 ? "s" : ""}
         {urgent ? `, dont ${urgentes} urgente${urgentes > 1 ? "s" : ""}` : ""}
       </Text>
-    </View>
+    </Pressable>
   );
 }
 

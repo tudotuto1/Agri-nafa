@@ -12,6 +12,9 @@ export default function DispositionApp() {
       <Stack.Screen name="grossistes" />
       <Stack.Screen name="agri-score" />
       <Stack.Screen name="prevente" />
+      <Stack.Screen name="alertes" />
+      <Stack.Screen name="cameras" />
+      <Stack.Screen name="camera/[id]" />
       <Stack.Screen name="parcelles" />
       <Stack.Screen name="parcelle/[id]" />
       <Stack.Screen name="guides" />

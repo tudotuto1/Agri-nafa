@@ -40,7 +40,7 @@ export const CLE_FILE = "agrinafa.file-attente";
 /** Au-delà, on cesse de réessayer et on marque l'entrée pour l'utilisateur. */
 export const TENTATIVES_MAX = 5;
 
-/** Conflit de clé primaire : la ligne existe déjà, donc le rejeu a abouti. */
+/** Violation d'unicité. Toutes contraintes confondues — voir estDoublonClePrimaire. */
 const CODE_DOUBLON = "23505";
 
 export type EntreeFile = {
@@ -99,8 +99,43 @@ export function estEchecReseau(reponse: ReponseEcriture): boolean {
   return INDICES_RESEAU.some((indice) => texte.includes(indice));
 }
 
-function estDoublon(erreur: PostgrestError | null): boolean {
-  return (erreur?.code ?? "") === CODE_DOUBLON;
+/**
+ * Le rejeu a-t-il buté sur SA PROPRE ligne, déjà écrite ?
+ *
+ * Le code 23505 ne suffit pas à le conclure, et c'est un piège : il couvre
+ * toutes les contraintes d'unicité de la table, pas seulement la clé primaire.
+ * `cameras.identifiant_materiel` est unique lui aussi. Deux caméras distinctes
+ * déclarées avec le même numéro de série lèvent exactement le même 23505 — le
+ * prendre pour un succès effacerait la saisie sans un mot, l'inverse précis de
+ * ce que cette file promet.
+ *
+ * Seule la clé primaire porte l'identifiant que nous avons tiré nous-mêmes :
+ * c'est la seule collision qui prouve que notre ligne est arrivée.
+ *
+ * Postgres nomme la contrainte violée dans le message et désigne la colonne
+ * dans le détail. Relevé sur la base plutôt que supposé :
+ *
+ *   clé primaire   → « ...unique constraint "cameras_pkey" »
+ *                    détail « Key (id)=(...) already exists. »
+ *   numéro de série→ « ...unique constraint "cameras_identifiant_materiel_key" »
+ *
+ * Les deux marqueurs sont testés, l'un rattrapant l'autre si le message
+ * changeait de forme. En cas de doute, la fonction répond non : signaler une
+ * erreur sur une ligne en réalité écrite se voit et se corrige, alors qu'une
+ * saisie escamotée ne se remarque qu'au moment où elle manque.
+ */
+function estDoublonClePrimaire(
+  erreur: PostgrestError | null,
+  table: string,
+): boolean {
+  if ((erreur?.code ?? "") !== CODE_DOUBLON) return false;
+
+  const message = (erreur?.message ?? "").toLowerCase();
+  const details = (erreur?.details ?? "").toLowerCase();
+
+  if (message.includes(`${table.toLowerCase()}_pkey`)) return true;
+  // « Key (id)=(4f3a…) already exists. » — la clé en cause est bien l'id.
+  return /key \(id\)=/.test(details);
 }
 
 // -----------------------------------------------------------------------------
@@ -181,9 +216,12 @@ export async function ajouter(
 
   if (!reponse.error) return { id, enFile: false, erreur: null };
 
-  // La ligne existait déjà : un envoi précédent avait abouti sans qu'on
-  // reçoive la réponse.
-  if (estDoublon(reponse.error)) return { id, enFile: false, erreur: null };
+  // Notre ligne existait déjà : un envoi précédent avait abouti sans qu'on
+  // reçoive la réponse. Un doublon sur une AUTRE contrainte d'unicité n'est pas
+  // ce cas — il tombe plus bas, et remonte à l'écran comme un refus.
+  if (estDoublonClePrimaire(reponse.error, table)) {
+    return { id, enFile: false, erreur: null };
+  }
 
   if (!estEchecReseau(reponse)) {
     return { id, enFile: false, erreur: reponse.error };
@@ -239,7 +277,7 @@ export async function vider(): Promise<ResultatVidage> {
         .from(entree.table)
         .insert({ id: entree.id, ...entree.donnees })) as unknown as ReponseEcriture;
 
-      if (!reponse.error || estDoublon(reponse.error)) {
+      if (!reponse.error || estDoublonClePrimaire(reponse.error, entree.table)) {
         file = file.filter((e) => e.id !== entree.id);
         envoyees += 1;
         continue;
