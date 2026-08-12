@@ -2,9 +2,26 @@
 // Guide technique — détail d'un itinéraire.
 //
 // Quatre onglets : l'itinéraire pas à pas, l'économie, quand vendre, et
-// comment vendre. Le fil conducteur est la surface : tout ce qui se dose y est
-// ramené, parce qu'un producteur de 0,25 ha ne doit jamais avoir à diviser une
-// consigne de tête au moment d'acheter son engrais.
+// comment vendre. Le fil conducteur est la taille de l'exploitation : tout ce
+// qui se dose y est ramené, parce qu'un producteur de 0,25 ha ne doit jamais
+// avoir à diviser une consigne à l'hectare au moment d'acheter son engrais.
+//
+// -----------------------------------------------------------------------------
+// CE QUE « TAILLE » VEUT DIRE
+//
+// Les colonnes de la base s'appellent toutes `*_ha` : elles ont été écrites
+// pour des cultures. `base_calcul` dit comment les lire — une valeur à
+// l'hectare, à la tête ou au bassin. Pour un troupeau, l'hectare n'a aucun
+// sens : on raisonne à l'animal.
+//
+// Le calcul ne change pas d'une base à l'autre, c'est toujours « valeur
+// unitaire × taille ». Ce qui change, ce sont les paliers proposés et les
+// mots. Les règles vivent dans lib/guides.ts, pas ici : cet écran ne fait que
+// les appliquer.
+//
+// Les guides de culture doivent s'afficher exactement comme avant l'arrivée de
+// cette colonne. Les taux unitaires (« coût par tête ») ne sont donc montrés
+// que hors hectare, où ils n'existaient pas auparavant.
 // =============================================================================
 
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -32,15 +49,15 @@ import {
   LIBELLES_PHASE,
   MOIS_COURTS,
   MOIS_LONGS,
-  SURFACES,
   conditionnementsNecessaires,
   coutEtape,
   doseSurface,
   formaterQuantite,
-  formaterSurface,
+  formaterTaille,
   heuresPourSurface,
   nombre,
-  surfaceLaPlusProche,
+  reglesBase,
+  tailleParDefaut,
   type Conseil,
   type EtapeGuide,
   type Guide,
@@ -86,9 +103,13 @@ export default function EcranGuideDetail() {
   const [chargement, setChargement] = useState(true);
   const [erreur, setErreur] = useState<string | null>(null);
 
-  // Surface de travail : pré-remplie depuis le profil, ramenée au palier le
-  // plus proche. Le producteur peut la changer sans que rien soit enregistré.
-  const [surface, setSurface] = useState(() => surfaceLaPlusProche(profil?.superficie_ha));
+  // Taille de travail : surface en hectares, effectif en têtes ou nombre de
+  // bassins selon le guide. Pré-remplie depuis le profil quand cela a un sens,
+  // et modifiable sans que rien ne soit enregistré.
+  //
+  // Elle ne peut pas être initialisée ici : `base_calcul` arrive avec le guide.
+  // D'où le null de départ, résolu au chargement.
+  const [taille, setTaille] = useState<number | null>(null);
 
   const charger = useCallback(async () => {
     if (!id) return;
@@ -111,6 +132,12 @@ export default function EcranGuideDetail() {
     const g = resGuide.data as Guide;
     setGuide(g);
     setEtapes((resEtapes.data ?? []) as EtapeGuide[]);
+
+    // Une seule fois : un rechargement ne doit pas écraser le palier que le
+    // producteur vient de choisir.
+    setTaille((actuelle) =>
+      actuelle ?? tailleParDefaut(g.base_calcul, profil?.superficie_ha),
+    );
 
     // Le reste dépend de la spéculation : on l'enchaîne une fois connue.
     const [resSaisons, resConseils, resCycles] = await Promise.all([
@@ -179,6 +206,10 @@ export default function EcranGuideDetail() {
 
   const unite = guide.unite_rendement ?? guide.unite_defaut;
 
+  // `taille` est null tant que le chargement n'a pas eu lieu ; à ce stade le
+  // guide est là, donc la valeur de départ de sa base fait un repli sûr.
+  const tailleEffective = taille ?? tailleParDefaut(guide.base_calcul, profil?.superficie_ha);
+
   return (
     <Ecran>
       <View style={styles.entete}>
@@ -199,8 +230,9 @@ export default function EcranGuideDetail() {
       {onglet === "itineraire" ? (
         <OngletItineraire
           etapes={etapes}
-          surface={surface}
-          onSurface={setSurface}
+          base={guide.base_calcul}
+          taille={tailleEffective}
+          onTaille={setTaille}
           sources={guide.sources}
         />
       ) : null}
@@ -209,8 +241,8 @@ export default function EcranGuideDetail() {
         <OngletEconomie
           guide={guide}
           etapes={etapes}
-          surface={surface}
-          onSurface={setSurface}
+          taille={tailleEffective}
+          onTaille={setTaille}
           unite={unite}
           prixRevientReel={prixRevientReel}
         />
@@ -246,29 +278,33 @@ export default function EcranGuideDetail() {
 // =============================================================================
 function OngletItineraire({
   etapes,
-  surface,
-  onSurface,
+  base,
+  taille,
+  onTaille,
   sources,
 }: {
   etapes: EtapeGuide[];
-  surface: number;
-  onSurface: (s: number) => void;
+  base: string;
+  taille: number;
+  onTaille: (t: number) => void;
   sources: string[] | null;
 }) {
   const [ouverte, setOuverte] = useState<string | null>(
     etapes.length > 0 ? etapes[0].etape_id : null,
   );
+  const regles = reglesBase(base);
 
   return (
     <View style={styles.bloc}>
-      <SelecteurSurface surface={surface} onChange={onSurface} />
+      <SelecteurTaille base={base} taille={taille} onChange={onTaille} />
 
       <View style={styles.frise}>
         {etapes.map((etape, index) => (
           <CarteEtape
             key={etape.etape_id}
             etape={etape}
-            surface={surface}
+            base={base}
+            taille={taille}
             derniere={index === etapes.length - 1}
             ouverte={ouverte === etape.etape_id}
             onToggle={() =>
@@ -283,8 +319,7 @@ function OngletItineraire({
         <Text style={styles.mentionTitre}>À propos des doses</Text>
         <Text style={styles.mentionTexte}>
           Les quantités de ce guide sont indicatives. Elles proviennent de
-          fiches techniques régionales et sont exprimées à l'hectare, puis
-          ramenées à la surface que vous choisissez.
+          fiches techniques régionales et sont {regles.mentionDoses}.
         </Text>
         <Text style={styles.mentionTexte}>
           Elles ne remplacent ni une analyse de sol, ni l'avis d'un agent
@@ -307,27 +342,30 @@ function OngletItineraire({
 }
 
 // -----------------------------------------------------------------------------
-function SelecteurSurface({
-  surface,
+function SelecteurTaille({
+  base,
+  taille,
   onChange,
 }: {
-  surface: number;
-  onChange: (s: number) => void;
+  base: string;
+  taille: number;
+  onChange: (t: number) => void;
 }) {
+  const regles = reglesBase(base);
   return (
     <View style={styles.selecteur}>
-      <Text style={styles.selecteurLibelle}>Votre surface</Text>
+      <Text style={styles.selecteurLibelle}>{regles.libelleSelecteur}</Text>
       <View style={styles.pilules}>
-        {SURFACES.map((s) => (
+        {regles.tailles.map((t) => (
           <Pilule
-            key={s}
-            libelle={formaterSurface(s)}
-            selectionnee={surface === s}
-            onPress={() => onChange(s)}
+            key={t}
+            libelle={formaterTaille(base, t)}
+            selectionnee={taille === t}
+            onPress={() => onChange(t)}
           />
         ))}
       </View>
-      <Aide>Les quantités et les coûts se recalculent pour cette surface.</Aide>
+      <Aide>{regles.aideSelecteur}</Aide>
     </View>
   );
 }
@@ -335,13 +373,15 @@ function SelecteurSurface({
 // -----------------------------------------------------------------------------
 function CarteEtape({
   etape,
-  surface,
+  base,
+  taille,
   derniere,
   ouverte,
   onToggle,
 }: {
   etape: EtapeGuide;
-  surface: number;
+  base: string;
+  taille: number;
   derniere: boolean;
   ouverte: boolean;
   onToggle: () => void;
@@ -349,8 +389,9 @@ function CarteEtape({
   const [coches, setCoches] = useState<Set<number>>(new Set());
   const phase = etape.phase;
   const couleurPhase = phase ? COULEURS_PHASE[phase] : null;
-  const cout = coutEtape(etape.intrants ?? [], surface);
-  const heures = heuresPourSurface(etape.heures_travail_ha, surface);
+  const regles = reglesBase(base);
+  const cout = coutEtape(etape.intrants ?? [], taille);
+  const heures = heuresPourSurface(etape.heures_travail_ha, taille);
 
   return (
     <View style={styles.friseLigne}>
@@ -403,14 +444,14 @@ function CarteEtape({
               <Text style={styles.description}>{etape.description}</Text>
             ) : null}
 
-            {/* Intrants ramenés à la surface -------------------------------- */}
+            {/* Intrants ramenés à la taille choisie -------------------------- */}
             {etape.intrants && etape.intrants.length > 0 ? (
               <View style={styles.sousBloc}>
                 <Text style={styles.sousTitre}>
-                  Ce qu'il vous faut pour {formaterSurface(surface)}
+                  Ce qu'il vous faut pour {formaterTaille(base, taille)}
                 </Text>
                 {etape.intrants.map((intrant) => (
-                  <LigneIntrant key={intrant.id} intrant={intrant} surface={surface} />
+                  <LigneIntrant key={intrant.id} intrant={intrant} taille={taille} />
                 ))}
                 {cout !== null ? (
                   <View style={styles.totalEtape}>
@@ -452,7 +493,8 @@ function CarteEtape({
                 {heures !== null ? (
                   <Text style={styles.heures}>
                     Environ {grouperChiffres(String(Math.round(heures)))} heures de
-                    travail pour {formaterSurface(surface)}
+                    travail{regles.heuresEnTotal ? " au total" : ""} pour{" "}
+                    {formaterTaille(base, taille)}
                   </Text>
                 ) : null}
               </View>
@@ -496,8 +538,8 @@ function libelleFenetre(etape: EtapeGuide): string {
 }
 
 // -----------------------------------------------------------------------------
-function LigneIntrant({ intrant, surface }: { intrant: Intrant; surface: number }) {
-  const quantite = doseSurface(intrant.quantite_par_ha, surface);
+function LigneIntrant({ intrant, taille }: { intrant: Intrant; taille: number }) {
+  const quantite = doseSurface(intrant.quantite_par_ha, taille);
   const unites = conditionnementsNecessaires(quantite, intrant.taille_conditionnement);
   const prix = nombre(intrant.prix_indicatif_unite);
 
@@ -538,49 +580,63 @@ function LigneIntrant({ intrant, surface }: { intrant: Intrant; surface: number 
 function OngletEconomie({
   guide,
   etapes,
-  surface,
-  onSurface,
+  taille,
+  onTaille,
   unite,
   prixRevientReel,
 }: {
   guide: Guide;
   etapes: EtapeGuide[];
-  surface: number;
-  onSurface: (s: number) => void;
+  taille: number;
+  onTaille: (t: number) => void;
   unite: string;
   prixRevientReel: number | null;
 }) {
   const [prixVente, setPrixVente] = useState("");
 
-  const coutHa = nombre(guide.cout_indicatif_ha);
-  const coutSurface = coutHa !== null ? coutHa * surface : null;
+  const base = guide.base_calcul;
+  const regles = reglesBase(base);
+  // Les colonnes s'appellent *_ha, mais elles portent une valeur par tête ou
+  // par bassin quand le guide le dit. Le produit est le même dans les trois cas.
+  const coutUnitaire = nombre(guide.cout_indicatif_ha);
+  const coutTotal = coutUnitaire !== null ? coutUnitaire * taille : null;
   const rendMin = nombre(guide.rendement_min_ha);
   const rendMax = nombre(guide.rendement_max_ha);
-  const recolteMin = rendMin !== null ? rendMin * surface : null;
-  const recolteMax = rendMax !== null ? rendMax * surface : null;
+  const recolteMin = rendMin !== null ? rendMin * taille : null;
+  const recolteMax = rendMax !== null ? rendMax * taille : null;
+
+  // Les taux unitaires ne sont montrés que hors hectare. Les guides de culture
+  // doivent s'afficher exactement comme avant l'arrivée de base_calcul.
+  const montrerTaux = base !== "hectare";
 
   const prix = nombre(prixVente);
   const caMin = prix !== null && recolteMin !== null ? prix * recolteMin : null;
   const caMax = prix !== null && recolteMax !== null ? prix * recolteMax : null;
-  const margeMin = caMin !== null && coutSurface !== null ? caMin - coutSurface : null;
-  const margeMax = caMax !== null && coutSurface !== null ? caMax - coutSurface : null;
+  const margeMin = caMin !== null && coutTotal !== null ? caMin - coutTotal : null;
+  const margeMax = caMax !== null && coutTotal !== null ? caMax - coutTotal : null;
 
   // Prix de revient issu du guide, à la fourchette basse de rendement : c'est
   // l'hypothèse prudente, la seule sur laquelle on peut bâtir une trésorerie.
   const revientGuide =
-    coutSurface !== null && recolteMin !== null && recolteMin > 0
-      ? coutSurface / recolteMin
+    coutTotal !== null && recolteMin !== null && recolteMin > 0
+      ? coutTotal / recolteMin
       : null;
 
   return (
     <View style={styles.bloc}>
-      <SelecteurSurface surface={surface} onChange={onSurface} />
+      <SelecteurTaille base={base} taille={taille} onChange={onTaille} />
 
       <View style={styles.carteEco}>
         <Text style={styles.ecoTitre}>Ce que ça coûte</Text>
+        {montrerTaux ? (
+          <LigneEco
+            libelle={`Coût ${regles.parUnite}`}
+            valeur={coutUnitaire !== null ? formaterFcfa(coutUnitaire) : "—"}
+          />
+        ) : null}
         <LigneEco
-          libelle={`Mise en culture de ${formaterSurface(surface)}`}
-          valeur={coutSurface !== null ? formaterFcfa(coutSurface) : "—"}
+          libelle={`${regles.verbeTotal} ${formaterTaille(base, taille)}`}
+          valeur={coutTotal !== null ? formaterFcfa(coutTotal) : "—"}
           fort
         />
         <Aide>Hors main-d'œuvre familiale et hors amortissement du matériel.</Aide>
@@ -588,6 +644,16 @@ function OngletEconomie({
 
       <View style={styles.carteEco}>
         <Text style={styles.ecoTitre}>Ce que ça peut rapporter</Text>
+        {montrerTaux ? (
+          <LigneEco
+            libelle={`Rendement ${regles.parUnite}`}
+            valeur={
+              rendMin !== null && rendMax !== null
+                ? `${formaterQuantite(rendMin, unite)} à ${formaterQuantite(rendMax, unite)}`
+                : "—"
+            }
+          />
+        ) : null}
         <LigneEco
           libelle="Récolte attendue"
           valeur={

@@ -54,6 +54,8 @@ export type Intrant = {
 export type EtapeGuide = {
   etape_id: string;
   itineraire_id: string;
+  /** Repris du guide parent par la vue, pour libeller les heures de travail. */
+  base_calcul?: string;
   ordre: number;
   titre: string;
   description: string | null;
@@ -85,6 +87,8 @@ export type Guide = {
   surface_min_ha: number | string | null;
   mois_semis_conseilles: number[] | null;
   sources: string[] | null;
+  /** hectare | tete | bassin — détermine la lecture de toutes les colonnes *_ha. */
+  base_calcul: string;
   speculation_id: string;
   speculation_code: string;
   speculation_nom: string;
@@ -200,6 +204,106 @@ export function surfaceLaPlusProche(surface: number | null | undefined): number 
 export function formaterSurface(surface: number): string {
   return `${surface.toString().replace(".", ",")} ha`;
 }
+
+// -----------------------------------------------------------------------------
+// Base de calcul
+//
+// Les colonnes s'appellent toutes `*_ha` parce qu'elles ont été pensées pour
+// des cultures. `base_calcul` dit comment les lire : une valeur à l'hectare,
+// à la tête ou au bassin. Le calcul, lui, ne change pas — c'est toujours
+// « valeur unitaire × taille de l'exploitation ». Seuls les paliers proposés
+// et les mots changent.
+//
+// Les quatre guides existants sont en `hectare`, et cette branche doit rendre
+// exactement les mêmes chaînes qu'avant l'introduction de la colonne : c'est
+// vérifié par les tests.
+// -----------------------------------------------------------------------------
+export type BaseCalcul = "hectare" | "tete" | "bassin";
+
+export type ReglesBase = {
+  /** Paliers proposés par le sélecteur. */
+  tailles: readonly number[];
+  /** Valeur retenue quand rien ne permet de deviner. */
+  defaut: number;
+  libelleSelecteur: string;
+  aideSelecteur: string;
+  /** Introduit le total : « Mise en culture de 0,5 ha ». */
+  verbeTotal: string;
+  /** « par hectare », « par tête », « par bassin ». */
+  parUnite: string;
+  /** Comment les doses du guide sont exprimées, pour la mention obligatoire. */
+  mentionDoses: string;
+  /** true quand le total d'heures mérite d'être dit « au total » (un troupeau). */
+  heuresEnTotal: boolean;
+};
+
+const REGLES: Record<BaseCalcul, ReglesBase> = {
+  hectare: {
+    tailles: SURFACES,
+    defaut: 0.5,
+    libelleSelecteur: "Votre surface",
+    aideSelecteur: "Les quantités et les coûts se recalculent pour cette surface.",
+    verbeTotal: "Mise en culture de",
+    parUnite: "par hectare",
+    mentionDoses: "exprimées à l'hectare, puis ramenées à la surface que vous choisissez",
+    heuresEnTotal: false,
+  },
+  tete: {
+    tailles: [5, 10, 25, 50, 100],
+    defaut: 10,
+    libelleSelecteur: "Nombre de têtes",
+    aideSelecteur: "Les quantités et les coûts se recalculent pour cet effectif.",
+    verbeTotal: "Élevage de",
+    parUnite: "par tête",
+    mentionDoses: "exprimées par tête, puis multipliées par l'effectif que vous choisissez",
+    heuresEnTotal: true,
+  },
+  bassin: {
+    tailles: [1, 2, 3, 5],
+    defaut: 1,
+    libelleSelecteur: "Nombre de bassins",
+    aideSelecteur: "Les quantités et les coûts se recalculent pour ce nombre de bassins.",
+    verbeTotal: "Exploitation de",
+    parUnite: "par bassin",
+    mentionDoses: "exprimées par bassin, puis multipliées par le nombre de bassins que vous choisissez",
+    heuresEnTotal: true,
+  },
+};
+
+/** Règles d'une base. Toute valeur inattendue retombe sur l'hectare. */
+export function reglesBase(base: string | null | undefined): ReglesBase {
+  return REGLES[(base ?? "hectare") as BaseCalcul] ?? REGLES.hectare;
+}
+
+/**
+ * Taille lisible : « 0,5 ha », « 25 têtes », « 1 bassin ».
+ *
+ * Pour l'hectare, le rendu est celui de `formaterSurface` — les guides
+ * existants ne doivent rien voir changer.
+ */
+export function formaterTaille(base: string | null | undefined, valeur: number): string {
+  const b = (base ?? "hectare") as BaseCalcul;
+  if (b === "tete") return `${valeur} tête${valeur > 1 ? "s" : ""}`;
+  if (b === "bassin") return `${valeur} bassin${valeur > 1 ? "s" : ""}`;
+  return formaterSurface(valeur);
+}
+
+/**
+ * Taille de départ.
+ *
+ * En hectares, on part de la surface du profil ramenée au palier le plus
+ * proche. Pour un troupeau ou des bassins, la surface de l'exploitation ne dit
+ * rien de l'effectif : on prend le défaut de la base plutôt qu'un chiffre qui
+ * aurait l'air d'être le sien.
+ */
+export function tailleParDefaut(
+  base: string | null | undefined,
+  superficieProfil?: number | string | null,
+): number {
+  if ((base ?? "hectare") === "hectare") return surfaceLaPlusProche(nombre(superficieProfil));
+  return reglesBase(base).defaut;
+}
+
 
 /**
  * Quantité lisible : groupement par milliers et virgule décimale française.
