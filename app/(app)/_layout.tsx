@@ -15,6 +15,7 @@ export default function DispositionApp() {
       <Stack.Screen name="alertes" />
       <Stack.Screen name="cameras" />
       <Stack.Screen name="camera/[id]" />
+      <Stack.Screen name="camera-installation" />
       <Stack.Screen name="parcelles" />
       <Stack.Screen name="parcelle/[id]" />
       <Stack.Screen name="guides" />

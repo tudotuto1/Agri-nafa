@@ -204,6 +204,14 @@ export default function EcranCameras() {
       <Succes message={confirmation} />
       <Erreur message={erreur} />
 
+      {!formulaireOuvert ? (
+        <Bouton
+          titre="Comment installer une caméra"
+          variante="contour"
+          onPress={() => router.push("/(app)/camera-installation")}
+        />
+      ) : null}
+
       {cameras.length === 0 && !formulaireOuvert ? (
         <View style={styles.vide}>
           <Text style={styles.videEmoji}>📷</Text>
