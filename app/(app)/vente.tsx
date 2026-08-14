@@ -116,9 +116,16 @@ export default function EcranVente() {
         )} ${u} seulement restent en récolte enregistrée. Vente sur pied ou récolte non saisie ? La vente sera enregistrée quand même.`;
   }, [cycleChoisi, quantiteNombre]);
 
+  // Un acompte encaisse ne peut pas depasser ce que la vente rapporte : la base
+  // le refuse depuis securite_lot1. On le dit ici plutot que de laisser partir
+  // l'ecriture — hors ligne elle serait mise en file, et ne serait rejetee
+  // qu'a la reconnexion, loin de l'ecran ou la faute a ete faite.
+  const acompteExcessif = acompteNombre > total && total > 0;
+
   const pret =
     quantiteNombre > 0 &&
     prixNombre > 0 &&
+    !acompteExcessif &&
     cycleId !== null &&
     dateIso !== null &&
     !envoi;
@@ -300,6 +307,13 @@ export default function EcranVente() {
         onChangeText={(v) => setAcompte(v.replace(/\D/g, "").slice(0, 12))}
         placeholder="0"
         keyboardType="number-pad"
+      />
+      <Erreur
+        message={
+          acompteExcessif
+            ? `L'acompte dépasse le total de la vente (${formaterFcfa(total)}). Un acompte est une avance : il ne peut pas être plus grand que ce qui est vendu.`
+            : null
+        }
       />
 
       {/* 6. Cycle — masqué s'il n'y en a qu'un ------------------------------ */}

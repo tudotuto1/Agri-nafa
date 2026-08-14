@@ -15,6 +15,11 @@ const PAR_CONTRAINTE: Record<string, string> = {
   ventes_quantite_vendue_check: "La quantité vendue doit être supérieure à zéro.",
   ventes_prix_unitaire_check: "Le prix unitaire ne peut pas être négatif.",
   ventes_acompte_recu_check: "L'acompte ne peut pas être négatif.",
+  // Plafond posé par la migration securite_lot1. L'écran de vente barre déjà
+  // la route en amont ; ce message couvre le rejeu d'une écriture mise en file
+  // avant que ce garde-fou n'existe.
+  chk_acompte_plafonne:
+    "L'acompte reçu dépasse le montant total de la vente. Corrigez l'un ou l'autre.",
   productions_recoltes_quantite_recoltee_check:
     "La quantité récoltée doit être supérieure à zéro.",
   productions_recoltes_qualite_check: "La qualité choisie n'est pas reconnue.",
