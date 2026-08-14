@@ -16,6 +16,7 @@ import { StyleSheet, Text, TextInput, View } from "react-native";
 
 import {
   Aide,
+  BandeauContexte,
   Bouton,
   Champ,
   Ecran,
@@ -27,6 +28,7 @@ import {
 } from "@/components/ui";
 import { CIBLE_TACTILE, couleurs, espaces, rayons, textes } from "@/constants/theme";
 import { useAuth } from "@/lib/auth";
+import { useCyclesActifs } from "@/lib/cycles";
 import {
   affichageVersIso,
   aujourdhuiIso,
@@ -63,8 +65,6 @@ const CATEGORIES: { code: Categorie; libelle: string; emoji: string }[] = [
   { code: "autre", libelle: "Autre", emoji: "📦" },
 ];
 
-type CycleActif = { id: string; nom: string };
-
 // =============================================================================
 export default function EcranDepense() {
   const router = useRouter();
@@ -76,35 +76,16 @@ export default function EcranDepense() {
   const [cycleId, setCycleId] = useState<string | null>(null);
   const [dateSaisie, setDateSaisie] = useState(isoVersAffichage(aujourdhuiIso()));
 
-  const [cycles, setCycles] = useState<CycleActif[]>([]);
-  const [chargement, setChargement] = useState(true);
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
 
+  const { cycles, chargement, erreur: erreurCycles } = useCyclesActifs();
+
+  // Un seul cycle : aucun choix à faire, le sélecteur reste masqué — mais le
+  // bandeau de contexte, lui, affiche de quoi il s'agit.
   useEffect(() => {
-    let actif = true;
-    supabase
-      .from("cycles_production")
-      .select("id, nom")
-      .eq("statut", "actif")
-      .is("deleted_at", null)
-      .order("date_debut", { ascending: false })
-      .then(({ data, error }) => {
-        if (!actif) return;
-        if (error) {
-          setErreur("Impossible de charger vos cycles. Réessayez.");
-        } else {
-          const liste = (data ?? []) as CycleActif[];
-          setCycles(liste);
-          // Un seul cycle : aucun choix à faire, le champ reste masqué.
-          if (liste.length === 1) setCycleId(liste[0].id);
-        }
-        setChargement(false);
-      });
-    return () => {
-      actif = false;
-    };
-  }, []);
+    if (cycles.length === 1) setCycleId(cycles[0].id);
+  }, [cycles]);
 
   const montantNombre = Number(montant || "0");
   const dateIso = useMemo(() => affichageVersIso(dateSaisie), [dateSaisie]);
@@ -190,6 +171,16 @@ export default function EcranDepense() {
   return (
     <Ecran>
       <Titre>Noter une dépense</Titre>
+
+      {/* Contexte — visible dès qu'il n'y a qu'un cycle, là où le sélecteur
+          disparaît. Ce qui n'a pas à être choisi doit quand même être su. */}
+      {cycles.length === 1 ? (
+        <BandeauContexte
+          emoji={cycles[0].icone}
+          principal={cycles[0].speculation ?? cycles[0].nom}
+          secondaire={cycles[0].parcelle}
+        />
+      ) : null}
 
       {/* 1. Montant --------------------------------------------------------- */}
       <View style={styles.blocMontant}>
@@ -284,7 +275,7 @@ export default function EcranDepense() {
         ) : null}
       </View>
 
-      <Erreur message={erreur} />
+      <Erreur message={erreur ?? erreurCycles} />
 
       <Bouton
         titre="Enregistrer la dépense"

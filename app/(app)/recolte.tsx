@@ -17,6 +17,7 @@ import { StyleSheet, Text, TextInput, View } from "react-native";
 
 import {
   Aide,
+  BandeauContexte,
   Bouton,
   Champ,
   Ecran,
@@ -29,6 +30,7 @@ import {
 import { CIBLE_TACTILE, couleurs, espaces, rayons, textes } from "@/constants/theme";
 import { useAuth } from "@/lib/auth";
 import { prixDeRevientProjete, useCyclesActifs } from "@/lib/cycles";
+import { qualitesPour, type Qualite } from "@/lib/qualites";
 import { messageErreurLisible } from "@/lib/erreurs";
 import { ajouter } from "@/lib/file-attente";
 import {
@@ -42,16 +44,11 @@ import {
 import { supabase } from "@/lib/supabase";
 
 // -----------------------------------------------------------------------------
-// Valeurs acceptées par la contrainte CHECK de productions_recoltes.
-// La qualité reste facultative : un second appui désélectionne.
+// Les trois codes de qualité sont ceux de la contrainte CHECK et ne bougent
+// pas. Seuls leurs libellés d'explication s'adaptent à la filière du cycle —
+// voir lib/qualites.ts. La qualité reste facultative : un second appui
+// désélectionne.
 // -----------------------------------------------------------------------------
-type Qualite = "premier_choix" | "second_choix" | "ecart_de_tri";
-
-const QUALITES: { code: Qualite; libelle: string; emoji: string }[] = [
-  { code: "premier_choix", libelle: "Premier choix", emoji: "⭐" },
-  { code: "second_choix", libelle: "Second choix", emoji: "👍" },
-  { code: "ecart_de_tri", libelle: "Écart de tri", emoji: "🥬" },
-];
 
 // =============================================================================
 export default function EcranRecolte() {
@@ -74,6 +71,19 @@ export default function EcranRecolte() {
   const cycleChoisi = useMemo(
     () => cycles.find((c) => c.id === cycleId) ?? null,
     [cycles, cycleId],
+  );
+
+  // Le vocabulaire suit la filière du cycle : on ne parle pas de « fruits » à
+  // un aviculteur. Tant qu'aucun cycle n'est choisi, le repli végétal
+  // s'applique — les libellés restent affichables.
+  const qualites = useMemo(
+    () => qualitesPour(cycleChoisi?.filiere, cycleChoisi?.uniteDefaut),
+    [cycleChoisi?.filiere, cycleChoisi?.uniteDefaut],
+  );
+
+  const qualiteChoisie = useMemo(
+    () => qualites.find((q) => q.code === qualite) ?? null,
+    [qualites, qualite],
   );
 
   const quantiteNombre = Number(quantite || "0");
@@ -167,6 +177,16 @@ export default function EcranRecolte() {
     <Ecran>
       <Titre>Noter une récolte</Titre>
 
+      {/* Contexte — visible dès qu'il n'y a qu'un cycle, là où le sélecteur
+          disparaît. Ce qui n'a pas à être choisi doit quand même être su. */}
+      {cycles.length === 1 ? (
+        <BandeauContexte
+          emoji={cycles[0].icone}
+          principal={cycles[0].speculation ?? cycles[0].nom}
+          secondaire={cycles[0].parcelle}
+        />
+      ) : null}
+
       {/* Contexte : ce que le cycle a déjà produit et ce qu'il a coûté ------- */}
       {cycleChoisi ? (
         <View style={styles.contexte}>
@@ -240,7 +260,7 @@ export default function EcranRecolte() {
       <View style={styles.bloc}>
         <Text style={styles.libelle}>Qualité (facultatif)</Text>
         <View style={styles.pilules}>
-          {QUALITES.map((q) => (
+          {qualites.map((q) => (
             <Pilule
               key={q.code}
               libelle={q.libelle}
@@ -250,6 +270,20 @@ export default function EcranRecolte() {
             />
           ))}
         </View>
+
+        {/* L'explication du choix courant, en clair sous les pilules. Ces
+            libellés ne sont pas des mots de producteur : cachés derrière une
+            icône d'aide, ils ne seraient jamais lus, et la qualité serait
+            cochée au hasard. */}
+        {qualiteChoisie ? (
+          <View style={styles.explicationQualite}>
+            <Text style={styles.explicationTitre}>
+              {qualiteChoisie.emoji} {qualiteChoisie.libelle}
+            </Text>
+            <Text style={styles.explicationTexte}>{qualiteChoisie.explication}</Text>
+          </View>
+        ) : null}
+
         <Aide>Appuyez une seconde fois pour retirer votre choix.</Aide>
       </View>
 
@@ -318,6 +352,25 @@ export default function EcranRecolte() {
 
 // -----------------------------------------------------------------------------
 const styles = StyleSheet.create({
+  explicationQualite: {
+    gap: espaces.xs,
+    padding: espaces.md,
+    borderRadius: rayons.md,
+    backgroundColor: couleurs.papier,
+    borderLeftWidth: 8,
+    borderLeftColor: couleurs.vert,
+  },
+  explicationTitre: {
+    fontSize: textes.petit,
+    fontWeight: "700",
+    color: couleurs.encre,
+  },
+  explicationTexte: {
+    fontSize: textes.petit,
+    lineHeight: 22,
+    color: couleurs.encre,
+  },
+
   bloc: {
     gap: espaces.sm,
   },

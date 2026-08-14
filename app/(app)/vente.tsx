@@ -16,6 +16,7 @@ import { StyleSheet, Text, TextInput, View } from "react-native";
 
 import {
   Aide,
+  BandeauContexte,
   Avertissement,
   Bouton,
   Champ,
@@ -205,6 +206,16 @@ export default function EcranVente() {
   return (
     <Ecran>
       <Titre>Nouvelle vente</Titre>
+
+      {/* Contexte — visible dès qu'il n'y a qu'un cycle, là où le sélecteur
+          disparaît. Ce qui n'a pas à être choisi doit quand même être su. */}
+      {cycles.length === 1 ? (
+        <BandeauContexte
+          emoji={cycles[0].icone}
+          principal={cycles[0].speculation ?? cycles[0].nom}
+          secondaire={cycles[0].parcelle}
+        />
+      ) : null}
 
       {/* 1. Quantité -------------------------------------------------------- */}
       <View style={styles.blocChiffre}>

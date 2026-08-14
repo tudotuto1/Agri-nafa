@@ -28,6 +28,17 @@ export type CycleActifDetaille = {
   dateFinPrevue: string | null;
   /** Nom de la spéculation — ce que le producteur annonce à ses acheteurs. */
   speculation: string | null;
+  /** Emoji de la spéculation, pour le bandeau de contexte. */
+  icone: string | null;
+  /**
+   * maraichage | avicole | elevage | cereale | autre.
+   * Commande le vocabulaire : on ne parle pas de « fruits » à un aviculteur.
+   */
+  filiere: string | null;
+  /** Unité de la spéculation au référentiel, distincte de `unite` qui a un repli. */
+  uniteDefaut: string | null;
+  /** Nom de la parcelle rattachée au cycle, quand il y en a une. */
+  parcelle: string | null;
 };
 
 const UNITE_PAR_DEFAUT = "unité";
@@ -61,20 +72,24 @@ export function useCyclesActifs() {
     let actif = true;
 
     (async () => {
-      const [resCycles, resSpec, resRenta] = await Promise.all([
+      const [resCycles, resSpec, resRenta, resParcelles] = await Promise.all([
         supabase
           .from("cycles_production")
-          .select("id, nom, speculation_id")
+          .select("id, nom, speculation_id, parcelle_id")
           .eq("statut", "actif")
           .is("deleted_at", null)
           .order("date_debut", { ascending: false }),
-        supabase.from("speculations").select("id, unite_defaut"),
+        supabase.from("speculations").select("id, nom, unite_defaut, icone, filiere"),
         supabase
           .from("vue_rentabilite_cycles")
           .select(
             "cycle_id, quantite_restante, total_recolte, total_depenses, prix_de_revient_unitaire, date_fin_prevue, speculation",
           )
           .eq("statut", "actif"),
+        // La parcelle n'est qu'un complément de contexte : son échec ne doit pas
+        // priver l'écran de ses cycles, on affichera simplement la spéculation
+        // seule.
+        supabase.from("parcelles").select("id, nom").is("deleted_at", null),
       ]);
 
       if (!actif) return;
@@ -85,10 +100,21 @@ export function useCyclesActifs() {
         return;
       }
 
-      const unites = new Map<string, string>(
-        ((resSpec.data ?? []) as { id: string; unite_defaut: string }[]).map((s) => [
-          s.id,
-          s.unite_defaut,
+      type LigneSpec = {
+        id: string;
+        nom: string;
+        unite_defaut: string;
+        icone: string | null;
+        filiere: string | null;
+      };
+      const speculations = new Map<string, LigneSpec>(
+        ((resSpec.data ?? []) as LigneSpec[]).map((sp) => [sp.id, sp]),
+      );
+
+      const parcelles = new Map<string, string>(
+        ((resParcelles.data ?? []) as { id: string; nom: string }[]).map((p) => [
+          p.id,
+          p.nom,
         ]),
       );
 
@@ -110,20 +136,27 @@ export function useCyclesActifs() {
           id: string;
           nom: string;
           speculation_id: string | null;
+          parcelle_id: string | null;
         }[]
       ).map((c) => {
         const agg = agregats.get(c.id);
+        const spec = c.speculation_id ? speculations.get(c.speculation_id) : undefined;
         return {
           id: c.id,
           nom: c.nom,
-          unite:
-            (c.speculation_id ? unites.get(c.speculation_id) : null) ?? UNITE_PAR_DEFAUT,
+          unite: spec?.unite_defaut ?? UNITE_PAR_DEFAUT,
           quantiteRestante: agg?.quantite_restante ?? null,
           totalRecolte: agg?.total_recolte ?? null,
           totalDepenses: agg?.total_depenses ?? null,
           prixDeRevient: agg?.prix_de_revient_unitaire ?? null,
           dateFinPrevue: agg?.date_fin_prevue ?? null,
-          speculation: agg?.speculation ?? null,
+          // La vue porte déjà le nom ; le référentiel prend le relais quand le
+          // cycle n'y figure pas encore.
+          speculation: agg?.speculation ?? spec?.nom ?? null,
+          icone: spec?.icone ?? null,
+          filiere: spec?.filiere ?? null,
+          uniteDefaut: spec?.unite_defaut ?? null,
+          parcelle: c.parcelle_id ? (parcelles.get(c.parcelle_id) ?? null) : null,
         };
       });
 

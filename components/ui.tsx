@@ -279,6 +279,42 @@ export function BarreProgression({
 }
 
 // -----------------------------------------------------------------------------
+// Bandeau de contexte.
+//
+// Quand une saisie ne concerne qu'un seul cycle, l'ancien écran masquait le
+// sélecteur — et avec lui l'information. Le producteur devait deviner sur quoi
+// il écrivait. Masquer un choix inutile est juste ; masquer ce qui est en train
+// d'être décidé ne l'est pas.
+//
+// Le bandeau n'est pas tappable : il n'y a rien à choisir, seulement à savoir.
+// -----------------------------------------------------------------------------
+export function BandeauContexte({
+  emoji,
+  principal,
+  secondaire,
+}: {
+  emoji?: string | null;
+  principal: string;
+  secondaire?: string | null;
+}) {
+  return (
+    <View
+      accessible
+      accessibilityLabel={`Cycle concerné : ${principal}${secondaire ? `, ${secondaire}` : ""}`}
+      style={styles.contexte}
+    >
+      <Text style={styles.contexteEmoji}>{emoji ?? "🌱"}</Text>
+      <Text style={styles.contexteTexte}>
+        {principal}
+        {secondaire ? (
+          <Text style={styles.contexteSecondaire}>{` · ${secondaire}`}</Text>
+        ) : null}
+      </Text>
+    </View>
+  );
+}
+
+// -----------------------------------------------------------------------------
 export function Badge({
   texte,
   ton = "info",
@@ -649,6 +685,28 @@ const styles = StyleSheet.create({
   barreRemplie: {
     height: "100%",
     borderRadius: rayons.rond,
+  },
+
+  contexte: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: espaces.sm,
+    padding: espaces.md,
+    borderRadius: rayons.md,
+    backgroundColor: couleurs.papier,
+    borderWidth: 2,
+    borderColor: couleurs.vert,
+  },
+  contexteEmoji: { fontSize: 28 },
+  contexteTexte: {
+    flex: 1,
+    fontSize: textes.corps,
+    fontWeight: "700",
+    color: couleurs.encre,
+  },
+  contexteSecondaire: {
+    fontWeight: "600",
+    color: couleurs.attenue,
   },
 
   badge: {
