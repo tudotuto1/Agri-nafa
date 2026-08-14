@@ -34,11 +34,42 @@ import * as Crypto from "expo-crypto";
 import type { PostgrestError } from "@supabase/supabase-js";
 
 import { supabase } from "@/lib/supabase";
+import { messageErreurLisible, type ErreurEcriture } from "@/lib/erreurs";
+import { formaterFcfa } from "@/lib/format";
 
 export const CLE_FILE = "agrinafa.file-attente";
 
 /** Au-delà, on cesse de réessayer et on marque l'entrée pour l'utilisateur. */
 export const TENTATIVES_MAX = 5;
+
+/**
+ * Plafond du nombre d'entrées gardées sur le téléphone.
+ *
+ * AsyncStorage n'est pas infini, et une file qui gonfle sans bruit finit par
+ * échouer à s'écrire — c'est-à-dire à perdre des saisies au moment précis où
+ * elle prétend les garder. Mieux vaut refuser franchement la 201e que rendre
+ * les 200 premières incertaines.
+ *
+ * Le plafond compte TOUTES les entrées, abandons compris : ce qui est en jeu
+ * est la place occupée, et une entrée abandonnée en occupe autant qu'une autre.
+ * L'écran file-attente.tsx permet de les purger.
+ */
+export const ENTREES_MAX = 200;
+
+/**
+ * Codes des refus qui ne viennent pas de la base.
+ *
+ * Ils voyagent dans le même canal que les erreurs Postgres — les écrans
+ * appellent tous `messageErreurLisible` sur ce qu'ils reçoivent — mais ne sont
+ * pas des codes Postgres : ils ont la forme d'un mot, là où Postgres numérote.
+ * Aucune collision possible, donc, et aucun écran à modifier.
+ */
+export const CODE_FILE_PLEINE = "FILE_PLEINE";
+export const CODE_FILE_NON_ECRITE = "FILE_NON_ECRITE";
+
+function refusLocal(code: string, message: string): ErreurEcriture {
+  return { code, message, details: "" };
+}
 
 /** Violation d'unicité. Toutes contraintes confondues — voir estDoublonClePrimaire. */
 const CODE_DOUBLON = "23505";
@@ -58,8 +89,12 @@ export type ResultatAjout = {
   id: string;
   /** true : gardée sur le téléphone, elle repartira au retour du réseau. */
   enFile: boolean;
-  /** Renseigné seulement pour un refus de la base — jamais pour une panne. */
-  erreur: PostgrestError | null;
+  /**
+   * Renseigné pour un refus — jamais pour une simple panne de réseau.
+   * Vient de la base, ou du téléphone lui-même quand il n'a pas pu garder la
+   * saisie. Dans les deux cas `messageErreurLisible` sait le traduire.
+   */
+  erreur: ErreurEcriture | null;
 };
 
 type ReponseEcriture = { error: PostgrestError | null; status?: number };
@@ -139,6 +174,100 @@ function estDoublonClePrimaire(
 }
 
 // -----------------------------------------------------------------------------
+// Décrire une entrée à l'écran
+//
+// Une entrée en attente est une ligne de table brute. Telle quelle, elle ne dit
+// rien à un producteur : `productions_recoltes` n'est pas un mot, et
+// `{"montant_total": 45000}` encore moins. Ces trois fonctions traduisent.
+// -----------------------------------------------------------------------------
+const LIBELLES_TABLE: Record<string, string> = {
+  depenses: "Dépense",
+  ventes: "Vente",
+  productions_recoltes: "Récolte",
+  fiches_prevente: "Fiche de prévente",
+  cycles_production: "Cycle de production",
+  grossistes: "Grossiste",
+  parcelles: "Parcelle",
+  cameras: "Caméra",
+};
+
+/** Groupe nominal attendu par `messageErreurLisible`, par table. */
+const SUJETS_TABLE: Record<string, string> = {
+  depenses: "la dépense",
+  ventes: "la vente",
+  productions_recoltes: "la récolte",
+  fiches_prevente: "la fiche de prévente",
+  cycles_production: "le cycle",
+  grossistes: "le grossiste",
+  parcelles: "la parcelle",
+  cameras: "la caméra",
+};
+
+/** Nom lisible de ce qui a été saisi. Repli sur le nom de table, faute de mieux. */
+export function libelleTable(table: string): string {
+  return LIBELLES_TABLE[table] ?? table;
+}
+
+function nombre(valeur: unknown): number | null {
+  return typeof valeur === "number" && Number.isFinite(valeur) ? valeur : null;
+}
+
+function texte(valeur: unknown): string | null {
+  return typeof valeur === "string" && valeur.trim().length > 0 ? valeur.trim() : null;
+}
+
+/**
+ * Ce qui identifie l'entrée pour celui qui l'a saisie : un montant quand il y
+ * en a un, sinon une quantité, sinon un nom.
+ *
+ * Les montants ne sont affichés que là où ils existent vraiment. Multiplier
+ * quantité et prix pour une vente est légitime — c'est la définition de
+ * `revenu_total` en base. Rien n'est inventé ailleurs.
+ */
+export function resumeEntree(entree: EntreeFile): string | null {
+  const d = entree.donnees;
+
+  switch (entree.table) {
+    case "depenses": {
+      const montant = nombre(d.montant_total);
+      const quoi = texte(d.description);
+      if (montant === null) return quoi;
+      return quoi ? `${formaterFcfa(montant)} · ${quoi}` : formaterFcfa(montant);
+    }
+    case "ventes": {
+      const q = nombre(d.quantite_vendue);
+      const prix = nombre(d.prix_unitaire);
+      const client = texte(d.client_nom);
+      const montant = q !== null && prix !== null ? formaterFcfa(q * prix) : null;
+      if (!montant) return client;
+      return client ? `${montant} · ${client}` : montant;
+    }
+    case "productions_recoltes": {
+      const q = nombre(d.quantite_recoltee);
+      if (q === null) return null;
+      return `${q} ${texte(d.unite) ?? ""}`.trim();
+    }
+    case "fiches_prevente": {
+      const q = nombre(d.quantite_prevue);
+      const prix = nombre(d.prix_demande);
+      const quantite = q === null ? null : `${q} ${texte(d.unite) ?? ""}`.trim();
+      if (q !== null && prix !== null) {
+        return `${quantite} · ${formaterFcfa(q * prix)} demandés`;
+      }
+      return quantite;
+    }
+    case "parcelles": {
+      const nom = texte(d.nom);
+      const surface = nombre(d.superficie_ha);
+      if (surface === null) return nom;
+      return nom ? `${nom} · ${surface} ha` : `${surface} ha`;
+    }
+    default:
+      return texte(d.nom);
+  }
+}
+
+// -----------------------------------------------------------------------------
 // Persistance
 // -----------------------------------------------------------------------------
 async function lire(): Promise<EntreeFile[]> {
@@ -153,8 +282,26 @@ async function lire(): Promise<EntreeFile[]> {
   }
 }
 
+/**
+ * Persiste la file. Lève si le stockage refuse.
+ *
+ * Le `catch` silencieux serait ici la pire des consolations : l'appelant
+ * croirait la saisie gardée alors qu'elle n'existe nulle part. Mémoire pleine,
+ * quota atteint, stockage chiffré indisponible au démarrage — les causes sont
+ * réelles sur des téléphones d'entrée de gamme. On remonte, l'appelant décide.
+ */
 async function ecrire(file: EntreeFile[]): Promise<void> {
-  await AsyncStorage.setItem(CLE_FILE, JSON.stringify(file));
+  try {
+    await AsyncStorage.setItem(CLE_FILE, JSON.stringify(file));
+  } catch (cause) {
+    throw new Error(
+      `Impossible d'enregistrer la file sur le téléphone : ${
+        cause instanceof Error ? cause.message : String(cause)
+      }`,
+    );
+  }
+  // Après l'écriture seulement : notifier une file non persistée afficherait
+  // un compteur que le prochain démarrage démentirait.
   notifier(file);
 }
 
@@ -228,6 +375,21 @@ export async function ajouter(
   }
 
   const file = await lire();
+
+  // Plafond atteint : refuser franchement plutôt que d'entasser. Une file qui
+  // déborde ne se signale pas toute seule — elle échoue à s'écrire, un jour,
+  // sans que personne ne l'ait demandé.
+  if (file.length >= ENTREES_MAX) {
+    return {
+      id,
+      enFile: false,
+      erreur: refusLocal(
+        CODE_FILE_PLEINE,
+        `File pleine : ${file.length} entrées sur ${ENTREES_MAX}.`,
+      ),
+    };
+  }
+
   file.push({
     id,
     table,
@@ -235,9 +397,46 @@ export async function ajouter(
     creeeLe: new Date().toISOString(),
     tentatives: 0,
   });
-  await ecrire(file);
+
+  try {
+    await ecrire(file);
+  } catch (cause) {
+    // Le téléphone n'a pas voulu garder la saisie. Le dire est la seule
+    // réponse acceptable : annoncer « gardée sur le téléphone » serait une
+    // promesse que rien ne tient.
+    return {
+      id,
+      enFile: false,
+      erreur: refusLocal(
+        CODE_FILE_NON_ECRITE,
+        cause instanceof Error ? cause.message : String(cause),
+      ),
+    };
+  }
 
   return { id, enFile: true, erreur: null };
+}
+
+// -----------------------------------------------------------------------------
+// Reprise en main par l'utilisateur
+//
+// Une entrée abandonnée ne repart plus d'elle-même. Ces deux fonctions sont ce
+// qui permet à l'écran file-attente.tsx d'exister : sans elles, « abandonnée »
+// serait un état sans issue.
+// -----------------------------------------------------------------------------
+
+/** Remet une entrée abandonnée dans le circuit : compteur à zéro, motif effacé. */
+export async function reessayerEntree(id: string): Promise<void> {
+  const file = await lire();
+  await ecrire(
+    file.map((e) => (e.id === id ? { ...e, tentatives: 0, erreur: undefined } : e)),
+  );
+}
+
+/** Retire définitivement une entrée. L'écran doit demander confirmation. */
+export async function supprimerEntree(id: string): Promise<void> {
+  const file = await lire();
+  await ecrire(file.filter((e) => e.id !== id));
 }
 
 // -----------------------------------------------------------------------------
@@ -303,10 +502,16 @@ export async function vider(): Promise<ResultatVidage> {
 
       // Refus de la base. Le rejouer ne changera rien : on marque l'entrée
       // plutôt que de la laisser tourner en boucle.
+      //
+      // Le motif est traduit ici, au moment où on le connaît encore comme une
+      // erreur Postgres. Plus tard il ne sera plus qu'une chaîne, et l'écran
+      // qui l'affiche n'aurait eu qu'un « violates check constraint » à montrer
+      // à un maraîcher.
+      const motif = reponse.error
+        ? messageErreurLisible(reponse.error, SUJETS_TABLE[entree.table] ?? "cette saisie")
+        : "Refusé par la base.";
       file = file.map((e) =>
-        e.id === entree.id
-          ? { ...e, tentatives: e.tentatives + 1, erreur: reponse.error?.message ?? "Refusé" }
-          : e,
+        e.id === entree.id ? { ...e, tentatives: e.tentatives + 1, erreur: motif } : e,
       );
     }
 
@@ -365,6 +570,8 @@ export function useFileAttente() {
   }, []);
 
   return {
+    entrees: file,
+    total: file.length,
     enAttente: file.filter((e) => !e.erreur).length,
     abandonnees: file.filter((e) => e.erreur).length,
     rejouer,

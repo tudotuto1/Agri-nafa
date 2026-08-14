@@ -8,8 +8,6 @@
 // Règle : aucune chaîne renvoyée ici ne doit contenir de vocabulaire Postgres.
 // =============================================================================
 
-import type { PostgrestError } from "@supabase/supabase-js";
-
 const PAR_CONTRAINTE: Record<string, string> = {
   depenses_montant_total_check: "Le montant ne peut pas être négatif.",
   ventes_quantite_vendue_check: "La quantité vendue doit être supérieure à zéro.",
@@ -45,11 +43,34 @@ const PAR_UNICITE: Record<string, string> = {
 };
 
 /**
+ * Tout ce dont la traduction a besoin d'une erreur d'écriture.
+ *
+ * `PostgrestError` s'y conforme, et les refus qui ne viennent pas de la base
+ * non plus — file pleine, stockage indisponible. Décrire la forme réellement
+ * lue plutôt qu'exiger la classe de Supabase évite d'avoir à fabriquer de
+ * fausses erreurs Postgres pour faire passer un refus local.
+ */
+export type ErreurEcriture = {
+  code?: string | null;
+  message?: string | null;
+  details?: string | null;
+};
+
+/**
  * @param sujet groupe nominal utilisé dans les messages génériques,
  *              par exemple « la dépense » ou « la vente ».
  */
-export function messageErreurLisible(erreur: PostgrestError, sujet: string): string {
+export function messageErreurLisible(erreur: ErreurEcriture, sujet: string): string {
   const texte = `${erreur.message ?? ""} ${erreur.details ?? ""}`.toLowerCase();
+
+  // Refus qui ne viennent pas de la base, mais du téléphone lui-même. Ils
+  // arrivent par le même canal que les erreurs Postgres — voir file-attente.ts.
+  if (erreur.code === "FILE_PLEINE") {
+    return "Trop de saisies en attente. Connectez-vous à internet pour les envoyer avant d'en ajouter d'autres.";
+  }
+  if (erreur.code === "FILE_NON_ECRITE") {
+    return "Le téléphone n'a pas pu garder cette saisie. Libérez de la place, puis recommencez.";
+  }
 
   // Colonne générée : le total est calculé par la base, jamais écrit.
   // Signe d'une régression dans le code, pas d'une faute de saisie.

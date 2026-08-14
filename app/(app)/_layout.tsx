@@ -20,6 +20,7 @@ export default function DispositionApp() {
       <Stack.Screen name="parcelle/[id]" />
       <Stack.Screen name="guides" />
       <Stack.Screen name="guide/[id]" />
+      <Stack.Screen name="file-attente" />
     </Stack>
   );
 }

@@ -236,14 +236,26 @@ export default function EcranAccueil() {
         </Pressable>
       ) : null}
 
+      {/* Distinct de la bande d'attente, et cliquable : celle-ci appelle une
+          décision. Une saisie perdue en silence est le pire scénario de cette
+          application — elle ne doit jamais être une ligne de plus à ignorer. */}
       {abandonnees > 0 ? (
-        <View style={styles.bandeauEchec}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Voir les ${abandonnees} saisies non envoyées`}
+          onPress={() => router.push("/(app)/file-attente")}
+          style={({ pressed }) => [styles.bandeauEchec, pressed && { opacity: 0.85 }]}
+        >
           <Text style={styles.bandeauFileIcone}>⚠️</Text>
-          <Text style={styles.bandeauFileTexte}>
-            {abandonnees} saisie{abandonnees > 1 ? "s" : ""} n'a pas pu être
-            envoyée. Vos données sont conservées sur le téléphone.
-          </Text>
-        </View>
+          <View style={styles.bandeauEchecTexte}>
+            <Text style={styles.bandeauFileTexte}>
+              {abandonnees} saisie{abandonnees > 1 ? "s" : ""} n&apos;
+              {abandonnees > 1 ? "ont" : "a"} pas pu être envoyée
+              {abandonnees > 1 ? "s" : ""}.
+            </Text>
+            <Text style={styles.bandeauEchecLien}>Voir et corriger ›</Text>
+          </View>
+        </Pressable>
       ) : null}
 
       {chargement ? (
@@ -583,6 +595,15 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFF8E1",
     borderLeftWidth: 5,
     borderLeftColor: couleurs.or,
+  },
+  bandeauEchecTexte: {
+    flex: 1,
+    gap: espaces.xs,
+  },
+  bandeauEchecLien: {
+    fontSize: textes.corps,
+    fontWeight: "700",
+    color: couleurs.rouge,
   },
   bandeauEchec: {
     flexDirection: "row",
