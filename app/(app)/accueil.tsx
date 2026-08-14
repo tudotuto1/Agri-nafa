@@ -192,8 +192,8 @@ export default function EcranAccueil() {
         <RefreshControl
           refreshing={rafraichissement}
           onRefresh={rafraichir}
-          colors={[couleurs.vert]}
-          tintColor={couleurs.vert}
+          colors={[couleurs.vertFonce]}
+          tintColor={couleurs.vertFonce}
         />
       }
     >
@@ -388,7 +388,7 @@ function CarteBenefice({ bord }: { bord: TableauBord }) {
     <View style={styles.carteBenefice}>
       <Text style={styles.benefLibelle}>Bénéfice net</Text>
       <Text
-        style={[styles.benefMontant, { color: positif ? couleurs.vert : couleurs.rouge }]}
+        style={[styles.benefMontant, { color: positif ? couleurs.vertFonce : couleurs.rouge }]}
         // Le chiffre peut être long : on le réduit plutôt que de le tronquer.
         adjustsFontSizeToFit
         numberOfLines={1}
@@ -399,7 +399,7 @@ function CarteBenefice({ bord }: { bord: TableauBord }) {
       <View style={styles.benefDetails}>
         <View style={styles.benefColonne}>
           <Text style={styles.benefDetailLibelle}>Revenus</Text>
-          <Text style={[styles.benefDetailValeur, { color: couleurs.vert }]}>
+          <Text style={[styles.benefDetailValeur, { color: couleurs.vertFonce }]}>
             {formaterFcfa(bord.total_revenus)}
           </Text>
         </View>
@@ -442,7 +442,7 @@ function CarteCycle({ cycle }: { cycle: CycleActif }) {
         <Text
           style={[
             styles.cycleBenefice,
-            { color: cycle.benefice_net >= 0 ? couleurs.vert : couleurs.rouge },
+            { color: cycle.benefice_net >= 0 ? couleurs.vertFonce : couleurs.rouge },
           ]}
         >
           {formaterFcfa(cycle.benefice_net)}

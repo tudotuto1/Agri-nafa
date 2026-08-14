@@ -81,7 +81,7 @@ const ONGLETS: { cle: CleOnglet; libelle: string; emoji: string }[] = [
 // trop clair pour du blanc.
 const COULEURS_PHASE: Record<Phase, { fond: string; texte: string }> = {
   preparation: { fond: couleurs.attenue, texte: couleurs.blanc },
-  installation: { fond: couleurs.vert, texte: couleurs.blanc },
+  installation: { fond: couleurs.vertFonce, texte: couleurs.blanc },
   entretien: { fond: "#1F7A8C", texte: couleurs.blanc },
   protection: { fond: couleurs.rouge, texte: couleurs.blanc },
   recolte: { fond: couleurs.or, texte: couleurs.encre },
@@ -693,7 +693,7 @@ function OngletEconomie({
                   : "—"
               }
               fort
-              couleur={margeMin !== null && margeMin < 0 ? couleurs.rouge : couleurs.vert}
+              couleur={margeMin !== null && margeMin < 0 ? couleurs.rouge : couleurs.vertFonce}
             />
             {margeMin !== null && margeMin < 0 ? (
               <Text style={styles.avertissementEco}>
@@ -722,7 +722,7 @@ function OngletEconomie({
               couleur={
                 revientGuide !== null && prixRevientReel > revientGuide
                   ? couleurs.rouge
-                  : couleurs.vert
+                  : couleurs.vertFonce
               }
             />
             {revientGuide !== null ? (
@@ -1109,7 +1109,7 @@ const styles = StyleSheet.create({
   intrantQuantite: {
     fontSize: textes.petit,
     fontWeight: "700",
-    color: couleurs.vert,
+    color: couleurs.vertFonce,
   },
   intrantAchat: {
     fontSize: textes.petit,

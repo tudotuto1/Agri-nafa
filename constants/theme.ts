@@ -8,6 +8,19 @@
 export const couleurs = {
   rouge: "#E8112D",
   vert: "#009E49",
+  // Le vert du drapeau (#009E49) donne 3,51 sur blanc et 3,32 sur papier :
+  // insuffisant pour du texte selon les critères d'accessibilité, et c'est le
+  // premier élément à disparaître en plein soleil sur un écran rayé.
+  // Cette variante assombrie dépasse 4,5 tout en restant reconnaissable.
+  //
+  // Ratios mesurés sur #007134 : 6,16 sur blanc, 5,83 sur papier. Les deux
+  // dépassent 4,5 avec de la marge — inutile d'assombrir davantage, ce qui
+  // aurait éloigné la teinte du drapeau sans rien gagner de lisible.
+  //
+  // Réservée au texte, aux icônes et aux fonds portant du texte blanc. Les
+  // aplats sans texte — barres de progression, épis de mil, bordures — gardent
+  // le vert du drapeau : c'est lui qui donne son identité à l'application.
+  vertFonce: "#007134",
   or: "#FCD116",
   encre: "#122B1B",
   attenue: "#5E7263",

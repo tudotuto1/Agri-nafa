@@ -155,7 +155,7 @@ export function Bouton({
       ]}
     >
       {chargement ? (
-        <ActivityIndicator color={contour ? couleurs.vert : couleurs.blanc} />
+        <ActivityIndicator color={contour ? couleurs.vertFonce : couleurs.blanc} />
       ) : (
         <Text style={[styles.boutonTexte, contour && styles.boutonTexteContour]}>
           {titre}
@@ -474,7 +474,7 @@ export function EcranAVenir({
 export function Attente() {
   return (
     <View style={styles.attente}>
-      <ActivityIndicator size="large" color={couleurs.vert} />
+      <ActivityIndicator size="large" color={couleurs.vertFonce} />
     </View>
   );
 }
@@ -558,8 +558,10 @@ const styles = StyleSheet.create({
     backgroundColor: couleurs.blanc,
   },
   piluleSelectionnee: {
-    borderColor: couleurs.vert,
-    backgroundColor: couleurs.vert,
+    // Fond porteur de texte blanc : le vert du drapeau n'y donnait que 3,51.
+    // La bordure suit le fond, sinon un liseré clair cerclerait un aplat sombre.
+    borderColor: couleurs.vertFonce,
+    backgroundColor: couleurs.vertFonce,
   },
   piluleEmoji: {
     fontSize: textes.corps,
@@ -576,7 +578,9 @@ const styles = StyleSheet.create({
   bouton: {
     minHeight: CIBLE_TACTILE,
     borderRadius: rayons.md,
-    backgroundColor: couleurs.vert,
+    // Bouton primaire : son libellé est blanc, le fond doit donc porter le
+    // contraste. Le vert du drapeau n'y atteignait que 3,51.
+    backgroundColor: couleurs.vertFonce,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: espaces.lg,
@@ -584,7 +588,9 @@ const styles = StyleSheet.create({
   boutonContour: {
     backgroundColor: "transparent",
     borderWidth: 2,
-    borderColor: couleurs.vert,
+    // La bordure accompagne un libellé vert : les deux s'assombrissent
+    // ensemble, sans quoi le trait paraîtrait délavé autour du texte.
+    borderColor: couleurs.vertFonce,
   },
   boutonInactif: {
     opacity: 0.45,
@@ -598,7 +604,7 @@ const styles = StyleSheet.create({
     color: couleurs.blanc,
   },
   boutonTexteContour: {
-    color: couleurs.vert,
+    color: couleurs.vertFonce,
   },
 
   champBloc: {
@@ -775,8 +781,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   caseCochee: {
-    borderColor: couleurs.vert,
-    backgroundColor: couleurs.vert,
+    // La marque « ✓ » est blanche : même raison que la pilule sélectionnée.
+    borderColor: couleurs.vertFonce,
+    backgroundColor: couleurs.vertFonce,
   },
   caseMarque: {
     fontSize: textes.petit,

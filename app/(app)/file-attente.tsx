@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
   },
   retourTexte: {
     fontSize: textes.corps,
-    color: couleurs.vert,
+    color: couleurs.vertFonce,
     fontWeight: "600",
   },
   bloc: {

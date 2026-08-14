@@ -497,6 +497,6 @@ const styles = StyleSheet.create({
   cycleActionTexte: {
     fontSize: textes.petit,
     fontWeight: "700",
-    color: couleurs.vert,
+    color: couleurs.vertFonce,
   },
 });

@@ -147,8 +147,8 @@ export default function EcranAlertes() {
         <RefreshControl
           refreshing={rafraichissement}
           onRefresh={rafraichir}
-          tintColor={couleurs.vert}
-          colors={[couleurs.vert]}
+          tintColor={couleurs.vertFonce}
+          colors={[couleurs.vertFonce]}
         />
       }
     >
@@ -305,7 +305,7 @@ const styles = StyleSheet.create({
   action: {
     fontSize: textes.petit,
     fontWeight: "700",
-    color: couleurs.vert,
+    color: couleurs.vertFonce,
   },
 
   vide: {

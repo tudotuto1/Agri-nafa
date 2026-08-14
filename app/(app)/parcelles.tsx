@@ -564,7 +564,7 @@ const styles = StyleSheet.create({
   },
   chevron: {
     fontSize: 28,
-    color: couleurs.vert,
+    color: couleurs.vertFonce,
   },
 
   vide: {

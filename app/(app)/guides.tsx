@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
   etapes: {
     fontSize: textes.petit,
     fontWeight: "700",
-    color: couleurs.vert,
+    color: couleurs.vertFonce,
   },
 
   carteGrisee: {

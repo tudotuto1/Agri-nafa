@@ -438,7 +438,7 @@ const styles = StyleSheet.create({
   totalMontant: {
     fontSize: 40,
     fontWeight: "700",
-    color: couleurs.vert,
+    color: couleurs.vertFonce,
   },
   totalDetail: {
     fontSize: textes.petit,

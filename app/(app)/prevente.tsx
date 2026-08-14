@@ -544,7 +544,7 @@ const styles = StyleSheet.create({
   acompteCalcule: {
     fontSize: textes.corps,
     fontWeight: "700",
-    color: couleurs.vert,
+    color: couleurs.vertFonce,
   },
 
   // Bulle inspirée de WhatsApp : le producteur reconnaît l'objet avant de
@@ -569,6 +569,14 @@ const styles = StyleSheet.create({
     color: "#111B21",
   },
   bulleHeure: {
+    // Seule taille de l'application sous le plancher de 16 posé dans theme.ts,
+    // et c'est délibéré : cette ligne imite l'horodatage de WhatsApp, dont
+    // l'aperçu ne serait pas reconnaissable à une autre échelle.
+    //
+    // Elle ne porte aucune information nécessaire à la compréhension — c'est
+    // un décor qui dit « voici à quoi ressemblera votre message ». Le texte
+    // qui compte, lui, est dans `bulleTexte`, à la taille normale. Rien n'est
+    // donc perdu par qui ne peut pas la lire.
     fontSize: 12,
     color: "#667781",
     alignSelf: "flex-end",
@@ -597,7 +605,7 @@ const styles = StyleSheet.create({
     color: couleurs.encre,
   },
   acheteurDetail: { fontSize: textes.petit, color: couleurs.attenue },
-  acheteurVocal: { fontSize: textes.petit, color: couleurs.vert },
+  acheteurVocal: { fontSize: textes.petit, color: couleurs.vertFonce },
   acheteurFleche: { fontSize: textes.titre, color: couleurs.attenue },
 
   vide: {

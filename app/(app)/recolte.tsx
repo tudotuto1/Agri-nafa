@@ -407,7 +407,7 @@ const styles = StyleSheet.create({
   contexteAbsent: {
     fontSize: textes.corps,
     fontWeight: "700",
-    color: couleurs.vert,
+    color: couleurs.vertFonce,
   },
   contexteNote: {
     fontSize: textes.petit,
@@ -431,7 +431,7 @@ const styles = StyleSheet.create({
   revientNouveau: {
     fontSize: textes.corps,
     fontWeight: "700",
-    color: couleurs.vert,
+    color: couleurs.vertFonce,
   },
 
   blocChiffre: {

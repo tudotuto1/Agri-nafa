@@ -59,10 +59,12 @@ const PLAFONDS = {
   commercial: 15,
 } as const;
 
+// Ces couleurs servent de couleur de TEXTE — chiffre du score, mention,
+// points par composante. D'où le vert assombri.
 function couleurDuScore(score: number): string {
   if (score < 40) return couleurs.rouge;
   if (score < 70) return couleurs.or;
-  return couleurs.vert;
+  return couleurs.vertFonce;
 }
 
 function mentionDuScore(score: number): string {
@@ -210,7 +212,7 @@ export default function EcranAgriScore() {
           <Text
             style={[
               styles.cumulValeur,
-              { color: donnees.benefice_cumule >= 0 ? couleurs.vert : couleurs.rouge },
+              { color: donnees.benefice_cumule >= 0 ? couleurs.vertFonce : couleurs.rouge },
             ]}
           >
             {formaterFcfa(donnees.benefice_cumule)}
@@ -318,7 +320,7 @@ function Composante({
   conseil: string;
 }) {
   const part = plafond > 0 ? points / plafond : 0;
-  const couleur = part >= 0.7 ? couleurs.vert : part >= 0.4 ? couleurs.or : couleurs.rouge;
+  const couleur = part >= 0.7 ? couleurs.vertFonce : part >= 0.4 ? couleurs.or : couleurs.rouge;
 
   return (
     <View style={styles.composante}>

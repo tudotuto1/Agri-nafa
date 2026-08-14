@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
   renvoi: {
     fontSize: textes.corps,
     fontWeight: "600",
-    color: couleurs.vert,
+    color: couleurs.vertFonce,
     textAlign: "center",
     paddingVertical: espaces.sm,
   },

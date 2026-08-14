@@ -298,7 +298,8 @@ const styles = StyleSheet.create({
     borderRadius: rayons.rond,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: couleurs.vert,
+    // Le numéro d'étape est blanc : le fond porte le contraste.
+    backgroundColor: couleurs.vertFonce,
   },
   pastilleTexte: {
     fontSize: textes.corps,
@@ -371,7 +372,7 @@ const styles = StyleSheet.create({
     width: 24,
     fontSize: textes.petit,
     fontWeight: "700",
-    color: couleurs.vert,
+    color: couleurs.vertFonce,
   },
   causeTexte: {
     flex: 1,

@@ -264,7 +264,7 @@ export function SchemaSim() {
         strokeWidth={TRAIT_FIN}
         strokeDasharray="6 5"
       />
-      <Legende x={60} y={20} taille={12} couleur={couleurs.vert}>
+      <Legende x={60} y={20} taille={12} couleur={couleurs.vertFonce}>
         joint étanche
       </Legende>
 
@@ -314,7 +314,7 @@ export function SchemaSim() {
         />
         <Polygon points="168,62 182,55 182,69" fill={couleurs.vert} />
       </G>
-      <Legende x={200} y={166} ancre="middle" taille={12} couleur={couleurs.vert}>
+      <Legende x={200} y={166} ancre="middle" taille={12} couleur={couleurs.vertFonce}>
         puce vers le bas
       </Legende>
     </Cadre>
@@ -489,7 +489,7 @@ export function SchemaPanneau() {
       </Legende>
 
       {/* Les points cardinaux : la face du panneau regarde le sud */}
-      <Legende x={222} y={92} taille={16} couleur={couleurs.vert}>
+      <Legende x={222} y={92} taille={16} couleur={couleurs.vertFonce}>
         SUD
       </Legende>
       <Legende x={40} y={92} taille={14}>
@@ -596,7 +596,7 @@ export function SchemaConnecteur() {
         />
         <Polygon points="196,34 182,27 182,41" fill={couleurs.vert} />
       </G>
-      <Legende x={128} y={22} taille={12} couleur={couleurs.vert}>
+      <Legende x={128} y={22} taille={12} couleur={couleurs.vertFonce}>
         du panneau vers le boîtier
       </Legende>
 
