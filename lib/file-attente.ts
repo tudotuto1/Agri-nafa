@@ -27,6 +27,42 @@
 // chantier : ce qui se perd, c'est ce qu'on saisit.
 // =============================================================================
 
+// =============================================================================
+// PÉRIMÈTRE : LES INSERTIONS SEULEMENT
+//
+// Huit écritures passent volontairement en direct, hors de cette file. Toutes
+// sont des mises à jour, et c'est le point : `vider()` ne sait rejouer qu'un
+// `.insert()`. Une mise à jour mise en file n'y trouverait pas de quoi repartir.
+//
+//   – marquer une alerte lue, une par une ou toutes (alertes.tsx)
+//   – supprimer un acheteur (grossistes.tsx)
+//   – rattacher ou détacher un cycle d'une parcelle (parcelle/[id].tsx)
+//   – renseigner la langue, clore l'inscription, modifier son profil
+//     (code.tsx, premier-cycle.tsx, profil.tsx)
+//
+// Les cinq premières — les trois premières lignes de la liste — ne perdent
+// rien à échouer : l'alerte reste affichée, l'acheteur reste dans la liste, le
+// cycle reste où il était. Le producteur recommence, et c'est tout.
+//
+// Les trois dernières demandent une nuance, parce qu'elles touchent au profil :
+//
+//   – la langue se repose d'un geste, à la page suivante ;
+//   – `onboarding_termine` a déjà son rattrapage dédié dans premier-cycle.tsx :
+//     le cycle, lui, est passé par la file et est donc gardé — seul le drapeau
+//     manque, et l'écran le dit ;
+//   – modifier son profil est le seul cas qui touche à de la saisie — nom,
+//     localité, superficie. Son échec n'escamote rien pour autant : il
+//     s'affiche aussitôt et le texte reste dans le formulaire, sous les yeux
+//     de celui qui vient de le taper.
+//
+// Ce qui se perd sans bruit, ce sont les insertions faites hors ligne, et
+// c'est exactement ce que cette file garde.
+//
+// Les couvrir supposerait de gérer les conflits de version entre appareils :
+// beaucoup de complexité pour protéger des gestes dont la perte ne coûte
+// rien, ou se voit immédiatement.
+// =============================================================================
+
 import { useCallback, useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import NetInfo from "@react-native-community/netinfo";
