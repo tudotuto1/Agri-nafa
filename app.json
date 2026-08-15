@@ -4,12 +4,14 @@
     "slug": "agrinafa",
     "version": "1.0.0",
     "orientation": "portrait",
+    "icon": "./assets/icon.png",
     "scheme": "agrinafa",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
+      "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#009E49"
+      "backgroundColor": "#00693B"
     },
     "assetBundlePatterns": ["**/*"],
     "ios": {
@@ -19,7 +21,8 @@
     "android": {
       "package": "bf.agrinafa.app",
       "adaptiveIcon": {
-        "backgroundColor": "#009E49"
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundImage": "./assets/adaptive-icon-fond.png"
       },
       "permissions": [
         "android.permission.RECORD_AUDIO",
@@ -27,6 +30,7 @@
         "android.permission.ACCESS_FINE_LOCATION"
       ]
     },
+    "web": { "favicon": "./assets/favicon.png" },
     "plugins": ["expo-router"],
     "experiments": {
       "typedRoutes": true
