@@ -21,6 +21,10 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { CIBLE_TACTILE, couleurs, espaces, rayons, textes } from "@/constants/theme";
+import {
+  IllustrationEspece,
+  TAILLE_LISTE,
+} from "@/components/illustration-espece";
 
 // -----------------------------------------------------------------------------
 type EcranProps = {
@@ -186,6 +190,8 @@ type CarteProps = {
   titre: string;
   sousTitre?: string;
   emoji?: string;
+  /** Code de spéculation. Quand il est fourni, l'illustration remplace l'emoji. */
+  codeEspece?: string | null;
   selectionnee?: boolean;
   onPress: () => void;
   action?: ReactNode;
@@ -195,6 +201,7 @@ export function Carte({
   titre,
   sousTitre,
   emoji,
+  codeEspece,
   selectionnee = false,
   onPress,
   action,
@@ -210,7 +217,11 @@ export function Carte({
         pressed && styles.cartePressee,
       ]}
     >
-      {emoji ? <Text style={styles.carteEmoji}>{emoji}</Text> : null}
+      {codeEspece ? (
+        <IllustrationEspece code={codeEspece} emoji={emoji} taille={TAILLE_LISTE} />
+      ) : emoji ? (
+        <Text style={styles.carteEmoji}>{emoji}</Text>
+      ) : null}
       <View style={styles.carteTextes}>
         <Text style={styles.carteTitre}>{titre}</Text>
         {sousTitre ? <Text style={styles.carteSousTitre}>{sousTitre}</Text> : null}
@@ -290,10 +301,13 @@ export function BarreProgression({
 // -----------------------------------------------------------------------------
 export function BandeauContexte({
   emoji,
+  codeEspece,
   principal,
   secondaire,
 }: {
   emoji?: string | null;
+  /** Code de spéculation. Absent ou inconnu : l'emoji prend le relais. */
+  codeEspece?: string | null;
   principal: string;
   secondaire?: string | null;
 }) {
@@ -303,7 +317,7 @@ export function BandeauContexte({
       accessibilityLabel={`Cycle concerné : ${principal}${secondaire ? `, ${secondaire}` : ""}`}
       style={styles.contexte}
     >
-      <Text style={styles.contexteEmoji}>{emoji ?? "🌱"}</Text>
+      <IllustrationEspece code={codeEspece} emoji={emoji} taille={TAILLE_LISTE} />
       <Text style={styles.contexteTexte}>
         {principal}
         {secondaire ? (

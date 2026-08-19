@@ -28,8 +28,10 @@ export type CycleActifDetaille = {
   dateFinPrevue: string | null;
   /** Nom de la spéculation — ce que le producteur annonce à ses acheteurs. */
   speculation: string | null;
-  /** Emoji de la spéculation, pour le bandeau de contexte. */
+  /** Emoji de la spéculation, repli du bandeau quand l'illustration manque. */
   icone: string | null;
+  /** Code de la spéculation : c'est lui qui désigne l'illustration. */
+  code: string | null;
   /**
    * maraichage | avicole | elevage | cereale | autre.
    * Commande le vocabulaire : on ne parle pas de « fruits » à un aviculteur.
@@ -79,7 +81,7 @@ export function useCyclesActifs() {
           .eq("statut", "actif")
           .is("deleted_at", null)
           .order("date_debut", { ascending: false }),
-        supabase.from("speculations").select("id, nom, unite_defaut, icone, filiere"),
+        supabase.from("speculations").select("id, code, nom, unite_defaut, icone, filiere"),
         supabase
           .from("vue_rentabilite_cycles")
           .select(
@@ -104,6 +106,7 @@ export function useCyclesActifs() {
         id: string;
         nom: string;
         unite_defaut: string;
+        code: string | null;
         icone: string | null;
         filiere: string | null;
       };
@@ -154,6 +157,7 @@ export function useCyclesActifs() {
           // cycle n'y figure pas encore.
           speculation: agg?.speculation ?? spec?.nom ?? null,
           icone: spec?.icone ?? null,
+          code: spec?.code ?? null,
           filiere: spec?.filiere ?? null,
           uniteDefaut: spec?.unite_defaut ?? null,
           parcelle: c.parcelle_id ? (parcelles.get(c.parcelle_id) ?? null) : null,

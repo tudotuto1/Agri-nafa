@@ -41,6 +41,10 @@ import {
   Titre,
 } from "@/components/ui";
 import { CIBLE_TACTILE, couleurs, espaces, rayons, textes } from "@/constants/theme";
+import {
+  IllustrationEspece,
+  TAILLE_CARTE,
+} from "@/components/illustration-espece";
 import { useAuth } from "@/lib/auth";
 import { formaterFcfa, grouperChiffres } from "@/lib/format";
 import {
@@ -213,7 +217,11 @@ export default function EcranGuideDetail() {
   return (
     <Ecran>
       <View style={styles.entete}>
-        <Text style={styles.emoji}>{guide.icone ?? "🌱"}</Text>
+        <IllustrationEspece
+          code={guide.speculation_code}
+          emoji={guide.icone}
+          taille={TAILLE_CARTE}
+        />
         <View style={styles.enteteTextes}>
           <Titre>{guide.titre}</Titre>
           <Aide>
@@ -995,7 +1003,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: espaces.md,
   },
-  emoji: { fontSize: 40 },
   enteteTextes: { flex: 1, gap: espaces.xs },
 
   selecteur: {

@@ -186,6 +186,7 @@ export default function EcranPremierCycle() {
           <Carte
             key={speculation.id}
             emoji={speculation.icone ?? undefined}
+            codeEspece={speculation.code}
             titre={speculation.nom}
             sousTitre={
               speculation.duree_cycle_jours

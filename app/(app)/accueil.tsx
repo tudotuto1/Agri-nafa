@@ -24,6 +24,10 @@ import {
   Titre,
 } from "@/components/ui";
 import { CIBLE_TACTILE, couleurs, espaces, rayons, textes } from "@/constants/theme";
+import {
+  IllustrationEspece,
+  TAILLE_LISTE,
+} from "@/components/illustration-espece";
 import { useFileAttente } from "@/lib/file-attente";
 import { formaterFcfa } from "@/lib/format";
 import { useAuth } from "@/lib/auth";
@@ -55,6 +59,20 @@ type CycleActif = {
   benefice_net: number;
 };
 
+/**
+ * Jointure PostgREST : une spéculation par cycle, ou aucune.
+ *
+ * La clé étrangère `speculation_id` est simple, donc la relation est de type
+ * « vers-un » et PostgREST renvoie un objet. Le tableau est accepté quand même :
+ * l'API n'est pas joignable depuis l'environnement de développement, et une
+ * forme inattendue ne se verrait pas — toutes les cartes retomberaient
+ * silencieusement sur l'emoji, ce qui passerait pour un choix et non un défaut.
+ */
+type LigneEspece = {
+  id: string;
+  speculations: { code: string } | { code: string }[] | null;
+};
+
 const CHAMPS_CYCLE =
   "cycle_id, nom_cycle, speculation, date_debut, date_fin_prevue, jours_avant_fin, benefice_net";
 
@@ -82,6 +100,11 @@ export default function EcranAccueil() {
 
   const [bord, setBord] = useState<TableauBord | null>(null);
   const [cycles, setCycles] = useState<CycleActif[]>([]);
+  // vue_rentabilite_cycles ne porte que le NOM de la spéculation, et
+  // speculations.nom n'a aucune contrainte d'unicité — s'y fier pour choisir
+  // une illustration marcherait aujourd'hui et se tromperait le jour où deux
+  // spéculations partagent un nom. On va donc chercher le code, qui est unique.
+  const [codesEspece, setCodesEspece] = useState<Record<string, string>>({});
   const [chargement, setChargement] = useState(true);
   const [rafraichissement, setRafraichissement] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
@@ -89,13 +112,17 @@ export default function EcranAccueil() {
   const charger = useCallback(async () => {
     setErreur(null);
 
-    const [resBord, resCycles] = await Promise.all([
+    const [resBord, resCycles, resEspeces] = await Promise.all([
       supabase.from("vue_tableau_bord").select("*").single(),
       supabase
         .from("vue_rentabilite_cycles")
         .select(CHAMPS_CYCLE)
         .eq("statut", "actif")
         .order("date_fin_prevue", { ascending: true, nullsFirst: false }),
+      supabase
+        .from("cycles_production")
+        .select("id, speculations(code)")
+        .eq("statut", "actif"),
     ]);
 
     if (resBord.error) {
@@ -109,6 +136,19 @@ export default function EcranAccueil() {
 
     setBord(resBord.data as TableauBord);
     setCycles((resCycles.data ?? []) as CycleActif[]);
+
+    // Échec non bloquant : sans les codes, les cartes montrent l'emoji. Une
+    // illustration manquante ne vaut pas un écran d'accueil en erreur.
+    if (!resEspeces.error) {
+      const lignes = (resEspeces.data ?? []) as unknown as LigneEspece[];
+      const table: Record<string, string> = {};
+      for (const ligne of lignes) {
+        const jointure = ligne.speculations;
+        const code = Array.isArray(jointure) ? jointure[0]?.code : jointure?.code;
+        if (code) table[ligne.id] = code;
+      }
+      setCodesEspece(table);
+    }
   }, []);
 
   // useFocusEffect et non useEffect : au retour depuis la saisie d'une
@@ -308,7 +348,11 @@ export default function EcranAccueil() {
           ) : (
             <View style={styles.liste}>
               {cycles.map((cycle) => (
-                <CarteCycle key={cycle.cycle_id} cycle={cycle} />
+                <CarteCycle
+              key={cycle.cycle_id}
+              cycle={cycle}
+              codeEspece={codesEspece[cycle.cycle_id] ?? null}
+            />
               ))}
             </View>
           )}
@@ -416,7 +460,13 @@ function CarteBenefice({ bord }: { bord: TableauBord }) {
 }
 
 // -----------------------------------------------------------------------------
-function CarteCycle({ cycle }: { cycle: CycleActif }) {
+function CarteCycle({
+  cycle,
+  codeEspece,
+}: {
+  cycle: CycleActif;
+  codeEspece: string | null;
+}) {
   const avancement = avancementCycle(cycle.date_debut, cycle.date_fin_prevue);
   const enRetard = cycle.jours_avant_fin !== null && cycle.jours_avant_fin < 0;
   const imminent =
@@ -433,6 +483,11 @@ function CarteCycle({ cycle }: { cycle: CycleActif }) {
   return (
     <View style={styles.carteCycle}>
       <View style={styles.cycleEntete}>
+        <IllustrationEspece
+          code={codeEspece}
+          taille={TAILLE_LISTE}
+          nom={cycle.speculation}
+        />
         <View style={styles.cycleTextes}>
           <Text style={styles.cycleNom}>{cycle.nom_cycle}</Text>
           {cycle.speculation ? (

@@ -182,6 +182,7 @@ export default function EcranRecolte() {
       {cycles.length === 1 ? (
         <BandeauContexte
           emoji={cycles[0].icone}
+          codeEspece={cycles[0].code}
           principal={cycles[0].speculation ?? cycles[0].nom}
           secondaire={cycles[0].parcelle}
         />

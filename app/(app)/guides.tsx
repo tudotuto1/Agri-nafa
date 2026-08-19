@@ -21,6 +21,11 @@ import {
   Titre,
 } from "@/components/ui";
 import { couleurs, espaces, rayons, textes } from "@/constants/theme";
+import {
+  IllustrationEspece,
+  TAILLE_CARTE,
+  TAILLE_LISTE,
+} from "@/components/illustration-espece";
 import { formaterFcfa } from "@/lib/format";
 import {
   LIBELLES_DIFFICULTE,
@@ -33,6 +38,7 @@ import { supabase } from "@/lib/supabase";
 type SpeculationSansGuide = {
   id: string;
   nom: string;
+  code: string;
   icone: string | null;
   filiere: string;
 };
@@ -50,7 +56,7 @@ export default function EcranGuides() {
     setErreur(null);
     const [resGuides, resSpec] = await Promise.all([
       supabase.from("vue_guides").select("*").order("titre"),
-      supabase.from("speculations").select("id, nom, icone, filiere").order("nom"),
+      supabase.from("speculations").select("id, code, nom, icone, filiere").order("nom"),
     ]);
 
     if (resGuides.error || resSpec.error) {
@@ -112,7 +118,11 @@ export default function EcranGuides() {
           <View style={styles.liste}>
             {aVenir.map((s) => (
               <View key={s.id} style={styles.carteGrisee}>
-                <Text style={styles.emojiGrise}>{s.icone ?? "🌱"}</Text>
+                <IllustrationEspece
+                  code={s.code}
+                  emoji={s.icone}
+                  taille={TAILLE_LISTE}
+                />
                 <View style={styles.griseTextes}>
                   <Text style={styles.nomGrise}>{s.nom}</Text>
                   <Text style={styles.enPreparation}>Guide en préparation</Text>
@@ -145,7 +155,11 @@ function CarteGuide({ guide, onPress }: { guide: Guide; onPress: () => void }) {
       style={({ pressed }) => [styles.carte, pressed && styles.presse]}
     >
       <View style={styles.carteEntete}>
-        <Text style={styles.emoji}>{guide.icone ?? "🌱"}</Text>
+        <IllustrationEspece
+          code={guide.speculation_code}
+          emoji={guide.icone}
+          taille={TAILLE_CARTE}
+        />
         <View style={styles.carteTextes}>
           <Text style={styles.carteTitre}>{guide.titre}</Text>
           <Text style={styles.carteSpeculation}>{guide.speculation_nom}</Text>
@@ -210,7 +224,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: espaces.md,
   },
-  emoji: { fontSize: 40 },
   carteTextes: { flex: 1, gap: 2 },
   carteTitre: {
     fontSize: textes.sousTitre,
@@ -266,7 +279,6 @@ const styles = StyleSheet.create({
     borderColor: couleurs.ligne,
     opacity: 0.75,
   },
-  emojiGrise: { fontSize: 28 },
   griseTextes: { flex: 1, gap: 2 },
   nomGrise: {
     fontSize: textes.corps,
