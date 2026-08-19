@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 168 168" width="168" height="168" role="img" aria-label="caprin_embouche (elevage)">
+  <circle cx="84" cy="84" r="84" fill="#0B2416"/>
+  <path d="M68,50 Q56,30 38,22 Q52,34 58,54 Z" fill="#FFFFFF"/>
+  <path d="M100,50 Q112,30 130,22 Q116,34 110,54 Z" fill="#FFFFFF"/>
+  <path d="M56,64 Q30,66 20,84 Q34,96 54,86 Z" fill="#FFFFFF"/>
+  <path d="M112,64 Q138,66 148,84 Q134,96 114,86 Z" fill="#FFFFFF"/>
+  <path d="M84,44 Q112,44 114,72 Q114,96 104,112 Q96,126 84,128
+           Q72,126 64,112 Q54,96 54,72 Q56,44 84,44 Z" fill="#FFFFFF"/>
+  <path d="M76,132 Q84,150 92,132 Q84,138 76,132 Z" fill="#FFFFFF"/>
+  <circle cx="70" cy="80" r="5" fill="#0B2416"/>
+  <circle cx="98" cy="80" r="5" fill="#0B2416"/>
+  <path d="M74,110 Q84,116 94,110" stroke="#0B2416" stroke-width="4.5"
+        fill="none" stroke-linecap="round"/>
+</svg>

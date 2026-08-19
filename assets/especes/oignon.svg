@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 168 168" width="168" height="168" role="img" aria-label="oignon (maraichage)">
+  <circle cx="84" cy="84" r="84" fill="#007134"/>
+  <path d="M84,140 C54,124 42,104 42,86 C42,64 61,50 84,50
+           C107,50 126,64 126,86 C126,104 114,124 84,140 Z" fill="#FFFFFF"/>
+  <path d="M82,52 Q72,34 56,26 Q74,32 84,48 Z" fill="#FFFFFF"/>
+  <path d="M86,52 Q96,32 114,24 Q98,32 88,48 Z" fill="#FFFFFF"/>
+  <path d="M84,50 L84,26" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round"/>
+  <path d="M66,74 Q60,96 68,116" stroke="#007134" stroke-width="6"
+        fill="none" stroke-linecap="round"/>
+  <path d="M102,74 Q108,96 100,116" stroke="#007134" stroke-width="6"
+        fill="none" stroke-linecap="round"/>
+
+</svg>

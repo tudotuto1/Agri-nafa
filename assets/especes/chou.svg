@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 168 168" width="168" height="168" role="img" aria-label="chou (maraichage)">
+  <circle cx="84" cy="84" r="84" fill="#007134"/>
+  <path d="M66,88 C52,74 30,56 17,52 C11,70 32,96 64,102 Z" fill="#FFFFFF"/>
+  <path d="M104,86 C119,70 142,50 155,47 C160,66 138,92 106,99 Z" fill="#FFFFFF"/>
+  <path d="M23,58 Q44,78 62,96" stroke="#007134" stroke-width="4.5"
+        fill="none" stroke-linecap="round"/>
+  <path d="M148,54 Q127,74 108,93" stroke="#007134" stroke-width="4.5"
+        fill="none" stroke-linecap="round"/>
+  <circle cx="84" cy="101" r="38" fill="#FFFFFF"/>
+  <path d="M69,68 Q57,102 71,135" stroke="#007134" stroke-width="6"
+        fill="none" stroke-linecap="round"/>
+  <path d="M99,68 Q111,102 97,135" stroke="#007134" stroke-width="6"
+        fill="none" stroke-linecap="round"/>
+
+</svg>

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 168 168" width="168" height="168" role="img" aria-label="mais (cereale)">
+  <circle cx="84" cy="84" r="84" fill="#FCD116"/>
+  <path d="M52,70 Q40,112 62,140 Q66,110 72,92 Z" fill="#122B1B"/>
+  <path d="M116,70 Q128,112 106,140 Q102,110 96,92 Z" fill="#122B1B"/>
+  <path d="M84,26 C102,40 108,62 108,86 C108,116 98,138 84,144
+           C70,138 60,116 60,86 C60,62 66,40 84,26 Z" fill="#122B1B"/>
+  <path d="M65,64 H103 M63,88 H105 M63,112 H105 M70,132 H98"
+        stroke="#FCD116" stroke-width="6" stroke-linecap="round"/>
+  <path d="M76,44 V136 M92,44 V136"
+        stroke="#FCD116" stroke-width="6" stroke-linecap="round"/>
+</svg>

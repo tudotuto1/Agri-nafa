@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 168 168" width="168" height="168" role="img" aria-label="ovin_engraissement (elevage)">
+  <circle cx="84" cy="84" r="84" fill="#0B2416"/>
+  <path d="M84,30 Q104,26 112,40 Q130,42 130,60 Q140,72 128,84
+           Q130,100 112,102 L56,102 Q38,100 40,84 Q28,72 38,60
+           Q38,42 56,40 Q64,26 84,30 Z" fill="#FFFFFF"/>
+  <path d="M40,74 Q22,72 20,88 Q20,104 36,104 Q46,104 46,94
+           Q46,86 36,88 Q30,90 32,96" stroke="#FFFFFF" stroke-width="11"
+        fill="none" stroke-linecap="round"/>
+  <path d="M128,74 Q146,72 148,88 Q148,104 132,104 Q122,104 122,94
+           Q122,86 132,88 Q138,90 136,96" stroke="#FFFFFF" stroke-width="11"
+        fill="none" stroke-linecap="round"/>
+  <path d="M62,100 Q60,128 84,134 Q108,128 106,100 Z" fill="#FFFFFF"/>
+  <circle cx="70" cy="86" r="5" fill="#0B2416"/>
+  <circle cx="98" cy="86" r="5" fill="#0B2416"/>
+  <path d="M74,116 Q84,122 94,116" stroke="#0B2416" stroke-width="4.5"
+        fill="none" stroke-linecap="round"/>
+  <path d="M84,124 V132" stroke="#0B2416" stroke-width="4" stroke-linecap="round"/>
+</svg>

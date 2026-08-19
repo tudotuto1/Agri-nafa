@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 168 168" width="168" height="168" role="img" aria-label="tomate (maraichage)">
+  <circle cx="84" cy="84" r="84" fill="#007134"/>
+  <circle cx="84" cy="98" r="41" fill="#FFFFFF"/>
+  <path d="M84,48 L91,62 L107,57 L100,72 L84,68 L68,72 L61,57 L77,62 Z" fill="#FFFFFF"/>
+  <path d="M84,52 L84,44" stroke="#FFFFFF" stroke-width="7" stroke-linecap="round"/>
+  <path d="M72,60 Q84,70 96,60" stroke="#007134" stroke-width="5"
+        fill="none" stroke-linecap="round"/>
+  <path d="M62,88 Q68,74 82,70" stroke="#007134" stroke-width="6"
+        fill="none" stroke-linecap="round"/>
+
+</svg>

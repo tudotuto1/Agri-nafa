@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 168 168" width="168" height="168" role="img" aria-label="tilapia (elevage)">
+  <circle cx="84" cy="84" r="84" fill="#0B2416"/>
+  <path d="M52,84 Q40,58 44,44 Q62,52 74,66 Z" fill="#FFFFFF"/>
+  <path d="M64,120 Q58,138 66,146 Q78,138 82,124 Z" fill="#FFFFFF"/>
+  <path d="M124,84 Q142,62 152,58 Q148,84 152,110 Q142,106 124,86 Z" fill="#FFFFFF"/>
+  <path d="M44,84 C50,56 78,42 100,50 C120,58 130,72 130,86
+           C130,102 118,118 98,124 C74,131 50,112 44,84 Z" fill="#FFFFFF"/>
+  <circle cx="62" cy="78" r="6" fill="#0B2416"/>
+  <path d="M78,56 Q70,86 80,116" stroke="#0B2416" stroke-width="5"
+        fill="none" stroke-linecap="round"/>
+  <path d="M96,72 Q106,86 96,102" stroke="#0B2416" stroke-width="4.5"
+        fill="none" stroke-linecap="round"/>
+  <path d="M112,78 Q120,88 112,100" stroke="#0B2416" stroke-width="4.5"
+        fill="none" stroke-linecap="round"/>
+</svg>

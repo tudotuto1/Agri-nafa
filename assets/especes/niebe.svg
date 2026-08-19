@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 168 168" width="168" height="168" role="img" aria-label="niebe (cereale)">
+  <circle cx="84" cy="84" r="84" fill="#FCD116"/>
+  <path d="M36,60 Q30,46 44,42 Q58,48 62,62 Z" fill="#122B1B"/>
+  <path d="M44,54 C68,58 96,72 118,92 C132,105 138,120 130,128
+           C120,136 104,128 90,114 C70,94 52,76 40,68
+           C32,62 36,52 44,54 Z" fill="#122B1B"/>
+  <circle cx="63" cy="70" r="8" fill="#FCD116"/>
+  <circle cx="82" cy="84" r="8" fill="#FCD116"/>
+  <circle cx="100" cy="99" r="8" fill="#FCD116"/>
+  <circle cx="117" cy="114" r="7.5" fill="#FCD116"/>
+
+</svg>

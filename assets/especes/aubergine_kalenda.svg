@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 168 168" width="168" height="168" role="img" aria-label="aubergine_kalenda (maraichage)">
+  <circle cx="84" cy="84" r="84" fill="#007134"/>
+  <g transform="translate(86,90) rotate(20)">
+    <ellipse cx="0" cy="8" rx="23" ry="43" fill="#FFFFFF"/>
+    <path d="M-21,-33 Q-34,-49 -6,-41 Z" fill="#FFFFFF"/>
+    <path d="M21,-33 Q34,-49 6,-41 Z" fill="#FFFFFF"/>
+    <path d="M-4,-38 L-4,-64 Q0,-70 4,-64 L4,-38 Z" fill="#FFFFFF"/>
+    <path d="M-23,-27 Q0,-14 23,-27" stroke="#007134" stroke-width="6"
+          fill="none" stroke-linecap="round"/>
+    <ellipse cx="-9" cy="10" rx="4.5" ry="16" fill="#007134"/>
+  </g>
+</svg>

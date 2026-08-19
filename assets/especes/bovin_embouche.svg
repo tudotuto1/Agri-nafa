@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 168 168" width="168" height="168" role="img" aria-label="bovin_embouche (elevage)">
+  <circle cx="84" cy="84" r="84" fill="#0B2416"/>
+  <path d="M62,56 Q36,52 22,36 Q12,24 20,20 Q28,18 32,30
+           Q40,46 64,44 Z" fill="#FFFFFF"/>
+  <path d="M106,56 Q132,52 146,36 Q156,24 148,20 Q140,18 136,30
+           Q128,46 104,44 Z" fill="#FFFFFF"/>
+  <path d="M52,72 Q30,78 26,92 Q42,98 58,88 Z" fill="#FFFFFF"/>
+  <path d="M116,72 Q138,78 142,92 Q126,98 110,88 Z" fill="#FFFFFF"/>
+  <path d="M84,48 Q116,48 118,78 Q118,96 110,108 Q100,124 84,126
+           Q68,124 58,108 Q50,96 50,78 Q52,48 84,48 Z" fill="#FFFFFF"/>
+  <circle cx="68" cy="80" r="5.5" fill="#0B2416"/>
+  <circle cx="100" cy="80" r="5.5" fill="#0B2416"/>
+  <path d="M66,104 Q84,112 102,104" stroke="#0B2416" stroke-width="5.5"
+        fill="none" stroke-linecap="round"/>
+  <path d="M74,116 Q84,120 94,116" stroke="#0B2416" stroke-width="4.5"
+        fill="none" stroke-linecap="round"/>
+</svg>

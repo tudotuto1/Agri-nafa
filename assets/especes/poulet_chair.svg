@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 168 168" width="168" height="168" role="img" aria-label="poulet_chair (avicole)">
+  <circle cx="84" cy="84" r="84" fill="#B50D22"/>
+  <path d="M74,118 V136" stroke="#FFFFFF" stroke-width="7" stroke-linecap="round"/>
+  <path d="M94,118 V136" stroke="#FFFFFF" stroke-width="7" stroke-linecap="round"/>
+  <path d="M62,72 L54,58 L68,62 L66,48 L78,58 Z" fill="#FFFFFF"/>
+  <ellipse cx="88" cy="98" rx="42" ry="32" fill="#FFFFFF"/>
+  <circle cx="62" cy="76" r="19" fill="#FFFFFF"/>
+  <path d="M44,76 L26,84 L44,90 Z" fill="#FFFFFF"/>
+  <path d="M126,84 Q146,64 148,84 Q146,102 126,100 Z" fill="#FFFFFF"/>
+  <circle cx="56" cy="72" r="4.5" fill="#B50D22"/>
+  <path d="M78,96 Q98,86 116,100 Q98,110 78,96 Z" fill="#B50D22"/>
+  <path d="M52,90 Q58,98 66,96" stroke="#B50D22" stroke-width="4"
+        fill="none" stroke-linecap="round"/>
+</svg>

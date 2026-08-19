@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 168 168" width="168" height="168" role="img" aria-label="pondeuse (avicole)">
+  <circle cx="84" cy="84" r="84" fill="#B50D22"/>
+  <path d="M72,116 V132" stroke="#FFFFFF" stroke-width="7" stroke-linecap="round"/>
+  <path d="M90,116 V132" stroke="#FFFFFF" stroke-width="7" stroke-linecap="round"/>
+  <path d="M60,70 L52,56 L66,60 L64,46 L76,56 Z" fill="#FFFFFF"/>
+  <ellipse cx="86" cy="96" rx="38" ry="30" fill="#FFFFFF"/>
+  <circle cx="60" cy="74" r="18" fill="#FFFFFF"/>
+  <path d="M43,74 L26,81 L43,88 Z" fill="#FFFFFF"/>
+  <path d="M120,82 Q140,62 144,80 Q142,98 122,98 Z" fill="#FFFFFF"/>
+  <circle cx="54" cy="70" r="4.5" fill="#B50D22"/>
+  <path d="M76,94 Q94,84 110,98 Q94,108 76,94 Z" fill="#B50D22"/>
+  <ellipse cx="112" cy="128" rx="19" ry="23" fill="#B50D22"/>
+  <ellipse cx="112" cy="128" rx="14" ry="18" fill="#FFFFFF"/>
+</svg>
