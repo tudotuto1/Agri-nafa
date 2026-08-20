@@ -21,11 +21,13 @@ import {
   Bouton,
   Ecran,
   Erreur,
+  EtatVide,
   SousTitre,
   Squelette,
   Titre,
 } from "@/components/ui";
 import { CIBLE_TACTILE, couleurs, espaces, rayons, textes } from "@/constants/theme";
+import { VIDES } from "@/components/illustrations-vides";
 import { dateRelative } from "@/lib/format";
 import {
   categorie,
@@ -157,14 +159,11 @@ export default function EcranAlertes() {
       <Erreur message={erreur} />
 
       {alertes.length === 0 ? (
-        <View style={styles.vide}>
-          <Text style={styles.videEmoji}>🔔</Text>
-          <Text style={styles.videTitre}>Aucune alerte</Text>
-          <Text style={styles.videTexte}>
-            Vos alertes apparaîtront ici : rappels du calendrier sanitaire,
-            stocks qui s'épuisent, mouvements de prix sur les marchés.
-          </Text>
-        </View>
+        <EtatVide
+          illustration={VIDES.aucune_alerte}
+          titre="Aucune alerte"
+          texte="Vos alertes apparaîtront ici : rappels du calendrier sanitaire, stocks qui s'épuisent, mouvements de prix sur les marchés."
+        />
       ) : null}
 
       {nonLues.length > 0 ? (
@@ -308,27 +307,4 @@ const styles = StyleSheet.create({
     color: couleurs.vertFonce,
   },
 
-  vide: {
-    alignItems: "center",
-    gap: espaces.sm,
-    padding: espaces.lg,
-    borderRadius: rayons.lg,
-    backgroundColor: couleurs.blanc,
-    borderWidth: 2,
-    borderStyle: "dashed",
-    borderColor: couleurs.ligne,
-  },
-  videEmoji: { fontSize: 44 },
-  videTitre: {
-    fontSize: textes.sousTitre,
-    fontWeight: "700",
-    color: couleurs.encre,
-    textAlign: "center",
-  },
-  videTexte: {
-    fontSize: textes.petit,
-    lineHeight: 22,
-    color: couleurs.attenue,
-    textAlign: "center",
-  },
 });

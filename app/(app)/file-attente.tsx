@@ -18,8 +18,16 @@ import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "expo-router";
 import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 
-import { Aide, Bouton, Ecran, SousTitre, Titre } from "@/components/ui";
+import {
+  Aide,
+  Bouton,
+  Ecran,
+  EtatVide,
+  SousTitre,
+  Titre,
+} from "@/components/ui";
 import { CIBLE_TACTILE, couleurs, espaces, rayons, textes } from "@/constants/theme";
+import { VIDES } from "@/components/illustrations-vides";
 import { horodatageEnFrancais } from "@/lib/format";
 import {
   ENTREES_MAX,
@@ -86,12 +94,11 @@ export default function EcranFileAttente() {
       <Titre>Saisies en attente</Titre>
 
       {total === 0 ? (
-        <View style={styles.vide}>
-          <Text style={styles.videEmoji}>✅</Text>
-          <Text style={styles.videTexte}>
-            Tout est enregistré. Aucune saisie n&apos;attend sur le téléphone.
-          </Text>
-        </View>
+        <EtatVide
+          illustration={VIDES.file_vide}
+          titre="Rien en attente"
+          texte="Tout est enregistré. Aucune saisie n'attend sur le téléphone."
+        />
       ) : (
         <Aide>
           {total} saisie{total > 1 ? "s" : ""} gardée{total > 1 ? "s" : ""} sur ce
@@ -264,17 +271,6 @@ const styles = StyleSheet.create({
     fontSize: textes.corps,
     fontWeight: "700",
     color: couleurs.rouge,
-  },
-  vide: {
-    alignItems: "center",
-    gap: espaces.sm,
-    paddingVertical: espaces.xl,
-  },
-  videEmoji: { fontSize: 44 },
-  videTexte: {
-    fontSize: textes.corps,
-    color: couleurs.attenue,
-    textAlign: "center",
   },
   pied: { height: espaces.xxl },
 });

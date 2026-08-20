@@ -27,6 +27,7 @@ import {
   Champ,
   Ecran,
   Erreur,
+  EtatVide,
   Pilule,
   SousTitre,
   Squelette,
@@ -34,6 +35,7 @@ import {
   Titre,
 } from "@/components/ui";
 import { CIBLE_TACTILE, couleurs, espaces, rayons, textes } from "@/constants/theme";
+import { VIDES } from "@/components/illustrations-vides";
 import { useAuth } from "@/lib/auth";
 import { messageErreurLisible } from "@/lib/erreurs";
 import { ajouter } from "@/lib/file-attente";
@@ -213,18 +215,15 @@ export default function EcranCameras() {
       ) : null}
 
       {cameras.length === 0 && !formulaireOuvert ? (
-        <View style={styles.vide}>
-          <Text style={styles.videEmoji}>📷</Text>
-          <Text style={styles.videTitre}>Aucune caméra</Text>
-          <Text style={styles.videTexte}>
-            Ces caméras solaires 4G se posent au champ et envoient une photo à
-            intervalle régulier ; la surveillance automatique des maladies
-            arrivera quand le matériel sera déployé.
-          </Text>
+        <EtatVide
+          illustration={VIDES.aucune_camera}
+          titre="Aucune caméra"
+          texte="Ces caméras solaires 4G se posent au champ et envoient une photo à intervalle régulier ; la surveillance automatique des maladies arrivera quand le matériel sera déployé."
+        >
           <Text style={styles.videNote}>
             Vous pouvez déjà déclarer un boîtier pour préparer son installation.
           </Text>
-        </View>
+        </EtatVide>
       ) : null}
 
       {cameras.length > 0 ? (
@@ -526,29 +525,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
 
-  vide: {
-    alignItems: "center",
-    gap: espaces.sm,
-    padding: espaces.lg,
-    borderRadius: rayons.lg,
-    backgroundColor: couleurs.blanc,
-    borderWidth: 2,
-    borderStyle: "dashed",
-    borderColor: couleurs.ligne,
-  },
-  videEmoji: { fontSize: 44 },
-  videTitre: {
-    fontSize: textes.sousTitre,
-    fontWeight: "700",
-    color: couleurs.encre,
-    textAlign: "center",
-  },
-  videTexte: {
-    fontSize: textes.petit,
-    lineHeight: 22,
-    color: couleurs.attenue,
-    textAlign: "center",
-  },
   videNote: {
     fontSize: textes.petit,
     fontStyle: "italic",

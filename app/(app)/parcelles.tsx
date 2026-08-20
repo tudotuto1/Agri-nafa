@@ -23,11 +23,13 @@ import {
   Champ,
   Ecran,
   Erreur,
+  EtatVide,
   Squelette,
   Succes,
   Titre,
 } from "@/components/ui";
 import { CIBLE_TACTILE, couleurs, espaces, rayons, textes } from "@/constants/theme";
+import { VIDES } from "@/components/illustrations-vides";
 import { useAuth } from "@/lib/auth";
 import { messageErreurLisible } from "@/lib/erreurs";
 import { ajouter } from "@/lib/file-attente";
@@ -397,14 +399,11 @@ export default function EcranParcelles() {
       <Erreur message={erreur} />
 
       {parcelles.length === 0 ? (
-        <View style={styles.vide}>
-          <Text style={styles.videEmoji}>🗺️</Text>
-          <Text style={styles.videTitre}>Aucune parcelle enregistrée</Text>
-          <Text style={styles.videTexte}>
-            Décrivez vos parcelles une fois : vous pourrez ensuite y rattacher
-            vos cycles de production et suivre la rentabilité champ par champ.
-          </Text>
-        </View>
+        <EtatVide
+          illustration={VIDES.aucune_parcelle}
+          titre="Aucune parcelle enregistrée"
+          texte="Décrivez vos parcelles une fois : vous pourrez ensuite y rattacher vos cycles de production et suivre la rentabilité champ par champ."
+        />
       ) : (
         <>
           <Aide>
@@ -567,27 +566,4 @@ const styles = StyleSheet.create({
     color: couleurs.vertFonce,
   },
 
-  vide: {
-    alignItems: "center",
-    gap: espaces.sm,
-    padding: espaces.lg,
-    borderRadius: rayons.lg,
-    backgroundColor: couleurs.blanc,
-    borderWidth: 2,
-    borderStyle: "dashed",
-    borderColor: couleurs.ligne,
-  },
-  videEmoji: { fontSize: 44 },
-  videTitre: {
-    fontSize: textes.sousTitre,
-    fontWeight: "700",
-    color: couleurs.encre,
-    textAlign: "center",
-  },
-  videTexte: {
-    fontSize: textes.petit,
-    lineHeight: 22,
-    color: couleurs.attenue,
-    textAlign: "center",
-  },
 });

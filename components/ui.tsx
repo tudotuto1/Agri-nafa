@@ -9,6 +9,9 @@ import { ReactNode, useEffect, useRef } from "react";
 import {
   ActivityIndicator,
   Animated,
+  Image,
+  ImageBackground,
+  type ImageSourcePropType,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -25,6 +28,7 @@ import {
   IllustrationEspece,
   TAILLE_LISTE,
 } from "@/components/illustration-espece";
+import { TRAMES, type TonEntete } from "@/components/illustrations-vides";
 
 // -----------------------------------------------------------------------------
 type EcranProps = {
@@ -85,6 +89,75 @@ export function Avertissement({ message }: { message: string | null }) {
     <View style={styles.avertissementBoite}>
       <Text style={styles.avertissementTexte}>{message}</Text>
     </View>
+  );
+}
+
+// -----------------------------------------------------------------------------
+// État vide.
+//
+// Un écran sans données n'est pas une panne : c'est quelqu'un qui n'a pas
+// encore commencé. Le dessin porte ce ton — traits clairs, aucune croix — et
+// le texte doit le prolonger : dire ce que l'écran contiendra, pas ce qui
+// manque. Les boutons éventuels passent en `children`, sous le texte, parce
+// qu'un état vide bien fait se termine par une porte ouverte.
+// -----------------------------------------------------------------------------
+export function EtatVide({
+  illustration,
+  titre,
+  texte,
+  children,
+}: {
+  illustration: ImageSourcePropType;
+  titre: string;
+  texte: string;
+  children?: ReactNode;
+}) {
+  return (
+    <View style={styles.etatVide}>
+      <Image
+        source={illustration}
+        style={styles.etatVideImage}
+        resizeMode="contain"
+        // Décorative : le titre juste dessous dit déjà tout. L'annoncer une
+        // seconde fois ne ferait qu'allonger la lecture au lecteur d'écran.
+        accessibilityElementsHidden
+        importantForAccessibility="no"
+      />
+      <Text style={styles.etatVideTitre}>{titre}</Text>
+      <Text style={styles.etatVideTexte}>{texte}</Text>
+      {children}
+    </View>
+  );
+}
+
+// -----------------------------------------------------------------------------
+// En-tête coloré, tramé Faso Dan Fani.
+//
+// La tuile se répète : c'est un tissu, il n'a pas de taille propre. Les
+// opacités du motif sont basses par construction (7 % et 5 %) et le contraste
+// a été mesuré — blanc sur la bande la plus sombre du vert donne 7,49, sur le
+// fil le plus clair 6,14. Le texte blanc reste donc au-dessus du seuil partout.
+// Si le motif devait un jour gêner, c'est lui qu'on atténue, jamais le texte
+// qu'on éclaircit.
+// -----------------------------------------------------------------------------
+export function EnteteColore({
+  ton = "vert",
+  children,
+  style,
+}: {
+  ton?: TonEntete;
+  children: ReactNode;
+  style?: ViewStyle;
+}) {
+  return (
+    <ImageBackground
+      source={TRAMES[ton]}
+      resizeMode="repeat"
+      style={[styles.entete, style]}
+      imageStyle={styles.enteteTrame}
+    >
+      {children}
+    </ImageBackground>
   );
 }
 
@@ -705,6 +778,39 @@ const styles = StyleSheet.create({
   barreRemplie: {
     height: "100%",
     borderRadius: rayons.rond,
+  },
+
+  etatVide: {
+    alignItems: "center",
+    gap: espaces.sm,
+    paddingVertical: espaces.lg,
+  },
+  etatVideImage: {
+    width: 200,
+    height: 190,
+  },
+  etatVideTitre: {
+    fontSize: textes.sousTitre,
+    fontWeight: "700",
+    color: couleurs.encre,
+    textAlign: "center",
+  },
+  etatVideTexte: {
+    fontSize: textes.corps,
+    lineHeight: 26,
+    color: couleurs.attenue,
+    textAlign: "center",
+  },
+
+  entete: {
+    borderRadius: rayons.lg,
+    overflow: "hidden",
+    padding: espaces.lg,
+  },
+  // Le rayon doit être répété sur l'image : sans lui la tuile déborderait
+  // aux angles et referait un carré derrière le bloc arrondi.
+  enteteTrame: {
+    borderRadius: rayons.lg,
   },
 
   contexte: {

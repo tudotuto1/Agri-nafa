@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 190" width="200" height="190" role="img" aria-label="aucun_cycle">
+  <path d="M20,150 Q100,138 180,150" stroke="#D8E4D0" stroke-width="3"
+        fill="none" stroke-linecap="round"/>
+  <path d="M26,162 Q100,150 174,162" stroke="#D8E4D0" stroke-width="3"
+        fill="none" stroke-linecap="round"/>
+  <path d="M34,174 Q100,163 166,174" stroke="#D8E4D0" stroke-width="3"
+        fill="none" stroke-linecap="round"/>
+  <path d="M100,146 V96" stroke="#007134" stroke-width="6" stroke-linecap="round"/>
+  <path d="M100,124 C84,120 74,108 74,96 C90,96 100,108 100,124 Z" fill="#007134"/>
+  <path d="M100,116 C116,112 126,100 126,88 C110,88 100,100 100,116 Z" fill="#007134"/>
+  <path d="M100,26 L108,50 L133,50 L113,65 L120,89 L100,74 L80,89 L87,65
+           L67,50 L92,50 Z" fill="#FCD116"/>
+</svg>

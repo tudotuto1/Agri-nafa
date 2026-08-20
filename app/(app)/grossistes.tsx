@@ -30,6 +30,7 @@ import {
   Champ,
   Ecran,
   Erreur,
+  EtatVide,
   Pilule,
   SousTitre,
   Squelette,
@@ -37,6 +38,7 @@ import {
   Titre,
 } from "@/components/ui";
 import { CIBLE_TACTILE, couleurs, espaces, rayons, textes } from "@/constants/theme";
+import { VIDES } from "@/components/illustrations-vides";
 import { useAuth } from "@/lib/auth";
 import { messageErreurLisible } from "@/lib/erreurs";
 import { ajouter } from "@/lib/file-attente";
@@ -238,14 +240,11 @@ export default function EcranGrossistes() {
 
       {/* Liste -------------------------------------------------------------- */}
       {grossistes.length === 0 && !formulaireOuvert ? (
-        <View style={styles.vide}>
-          <Text style={styles.videEmoji}>🤝</Text>
-          <SousTitre>Aucun acheteur enregistré</SousTitre>
-          <Aide>
-            Notez les bana-banas avec qui vous travaillez. Vous pourrez les
-            joindre d'un doigt au moment de vendre.
-          </Aide>
-        </View>
+        <EtatVide
+          illustration={VIDES.aucun_acheteur}
+          titre="Aucun acheteur enregistré"
+          texte="Notez les bana-banas avec qui vous travaillez. Vous pourrez les joindre d'un doigt au moment de vendre."
+        />
       ) : (
         <View style={styles.liste}>
           {grossistes.map((g) => (
@@ -650,15 +649,4 @@ const styles = StyleSheet.create({
   },
   interrupteurTextes: { flex: 1, gap: espaces.xs },
 
-  vide: {
-    alignItems: "center",
-    gap: espaces.md,
-    padding: espaces.lg,
-    borderRadius: rayons.lg,
-    backgroundColor: couleurs.blanc,
-    borderWidth: 2,
-    borderStyle: "dashed",
-    borderColor: couleurs.ligne,
-  },
-  videEmoji: { fontSize: 48 },
 });

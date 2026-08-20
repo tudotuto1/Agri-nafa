@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 190" width="200" height="190" role="img" aria-label="aucune_camera">
+  <rect x="30" y="76" width="94" height="66" rx="12"
+        stroke="#D8E4D0" stroke-width="4" fill="none"/>
+  <path d="M54,76 L62,60 L92,60 L100,76" stroke="#D8E4D0" stroke-width="4"
+        fill="none" stroke-linejoin="round"/>
+  <circle cx="77" cy="109" r="20" stroke="#D8E4D0" stroke-width="4" fill="none"/>
+  <circle cx="77" cy="109" r="7" fill="#D8E4D0"/>
+  <path d="M136,104 Q150,88 150,68" stroke="#FCD116" stroke-width="6"
+        fill="none" stroke-linecap="round"/>
+  <path d="M152,112 Q174,88 174,54" stroke="#FCD116" stroke-width="6"
+        fill="none" stroke-linecap="round"/>
+</svg>

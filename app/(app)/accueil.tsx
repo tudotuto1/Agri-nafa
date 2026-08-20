@@ -17,13 +17,16 @@ import {
   BarreProgression,
   Bouton,
   Ecran,
+  EnteteColore,
   Erreur,
+  EtatVide,
   SousTitre,
   Squelette,
   Succes,
   Titre,
 } from "@/components/ui";
 import { CIBLE_TACTILE, couleurs, espaces, rayons, textes } from "@/constants/theme";
+import { VIDES } from "@/components/illustrations-vides";
 import {
   IllustrationEspece,
   TAILLE_LISTE,
@@ -237,10 +240,15 @@ export default function EcranAccueil() {
         />
       }
     >
-      <View style={styles.entete}>
+      {/* L'application n'avait aucun en-tête coloré : celui-ci est créé pour
+          porter la trame. Le vert du splash (#00693B) est repris, pour que
+          l'ouverture de l'application et son accueil soient d'une pièce. */}
+      <EnteteColore ton="vert" style={styles.entete}>
         <View style={styles.enteteTextes}>
-          <Titre>Bonjour {prenom}</Titre>
-          {profil?.localite ? <Aide>{profil.localite}</Aide> : null}
+          <Text style={styles.enteteTitre}>Bonjour {prenom}</Text>
+          {profil?.localite ? (
+            <Text style={styles.enteteLieu}>{profil.localite}</Text>
+          ) : null}
         </View>
         {bord && bord.alertes_non_lues > 0 ? (
           <Pressable
@@ -255,7 +263,7 @@ export default function EcranAccueil() {
             />
           </Pressable>
         ) : null}
-      </View>
+      </EnteteColore>
 
       <Succes message={confirmation} />
 
@@ -569,13 +577,13 @@ function Rappel({
 function AucunCycle({ onCreer }: { onCreer: () => void }) {
   return (
     <View style={styles.vide}>
-      <Text style={styles.videEmoji}>🌱</Text>
-      <SousTitre>Aucun cycle en cours</SousTitre>
-      <Aide>
-        Créez un cycle pour suivre vos dépenses, vos récoltes et savoir ce que
-        votre production vous rapporte vraiment.
-      </Aide>
-      <Bouton titre="Créer un cycle" onPress={onCreer} />
+      <EtatVide
+        illustration={VIDES.aucun_cycle}
+        titre="Aucun cycle en cours"
+        texte="Créez un cycle pour suivre vos dépenses, vos récoltes et savoir ce que votre production vous rapporte vraiment."
+      >
+        <Bouton titre="Créer un cycle" onPress={onCreer} />
+      </EtatVide>
     </View>
   );
 }
@@ -633,6 +641,19 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: espaces.md,
+  },
+  // Blanc sur la trame verte : 6,81 sur l'aplat, 7,49 sur la bande sombre,
+  // 6,14 sur le fil clair. Le pire des trois reste bien au-dessus de 4,5.
+  enteteTitre: {
+    fontSize: textes.titre,
+    fontWeight: "700",
+    color: couleurs.blanc,
+  },
+  enteteLieu: {
+    fontSize: textes.petit,
+    lineHeight: 22,
+    color: couleurs.blanc,
+    opacity: 0.9,
   },
   enteteTextes: {
     flex: 1,
@@ -806,9 +827,6 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderStyle: "dashed",
     borderColor: couleurs.ligne,
-  },
-  videEmoji: {
-    fontSize: 48,
   },
 
   grille: {
