@@ -368,6 +368,11 @@ export default function EcranAccueil() {
           <SousTitre>Actions rapides</SousTitre>
           <View style={styles.grille}>
             <ActionRapide
+              emoji="📅"
+              libelle="Planifier une vente"
+              onPress={() => router.push("/(app)/planifier")}
+            />
+            <ActionRapide
               emoji="🎤"
               libelle="Dicter une dépense"
               onPress={() => router.push("/(app)/depense-vocale")}

@@ -264,6 +264,16 @@ export default function EcranGuideDetail() {
 
       <View style={styles.pied}>
         <Bouton
+          titre="Planifier une vente"
+          variante="contour"
+          onPress={() =>
+            router.push({
+              pathname: "/(app)/planifier",
+              params: { speculation_id: guide.speculation_id },
+            })
+          }
+        />
+        <Bouton
           titre="Démarrer ce cycle"
           onPress={() =>
             router.push({
