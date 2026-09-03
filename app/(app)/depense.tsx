@@ -11,7 +11,7 @@
 // =============================================================================
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { StyleSheet, Text, TextInput, View } from "react-native";
 
 import {
@@ -70,11 +70,28 @@ export default function EcranDepense() {
   const router = useRouter();
   const { session } = useAuth();
 
-  const [montant, setMontant] = useState("");
-  const [description, setDescription] = useState("");
-  const [categorie, setCategorie] = useState<Categorie>("intrants");
-  const [cycleId, setCycleId] = useState<string | null>(null);
-  const [dateSaisie, setDateSaisie] = useState(isoVersAffichage(aujourdhuiIso()));
+  // Valeurs d'ouverture, quand on arrive depuis la dictée par « Corriger ».
+  // Le producteur a déjà parlé : lui redemander tout serait le punir d'avoir
+  // voulu rectifier un détail.
+  const params = useLocalSearchParams<{
+    montant?: string;
+    description?: string;
+    categorie?: string;
+    cycle_id?: string;
+    date?: string;
+  }>();
+
+  const [montant, setMontant] = useState(params.montant ?? "");
+  const [description, setDescription] = useState(params.description ?? "");
+  const [categorie, setCategorie] = useState<Categorie>(
+    CATEGORIES.some((c) => c.code === params.categorie)
+      ? (params.categorie as Categorie)
+      : "intrants",
+  );
+  const [cycleId, setCycleId] = useState<string | null>(params.cycle_id ?? null);
+  const [dateSaisie, setDateSaisie] = useState(
+    isoVersAffichage(params.date ?? aujourdhuiIso()),
+  );
 
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
@@ -84,7 +101,7 @@ export default function EcranDepense() {
   // Un seul cycle : aucun choix à faire, le sélecteur reste masqué — mais le
   // bandeau de contexte, lui, affiche de quoi il s'agit.
   useEffect(() => {
-    if (cycles.length === 1) setCycleId(cycles[0].id);
+    if (cycles.length === 1) setCycleId((actuel) => actuel ?? cycles[0].id);
   }, [cycles]);
 
   const montantNombre = Number(montant || "0");
