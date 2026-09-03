@@ -60,6 +60,25 @@ import {
   useItinerairesParSpeculation,
 } from "@/lib/modes-conduite";
 
+/**
+ * Durée affichée sur la carte d'une spéculation, tirée de ses guides — c'est
+ * la durée qui servira au calcul. Deux conduites donnent une fourchette :
+ * annoncer « 120 jours » pour un bovin qui peut en demander 180 tromperait
+ * avant même le choix du mode.
+ */
+function libelleDuree(itineraires: { duree_totale_jours: number | null }[]): string {
+  const durees = itineraires
+    .map((i) => i.duree_totale_jours)
+    .filter((d): d is number => d !== null)
+    .sort((a, b) => a - b);
+  if (durees.length === 0) return "Durée inconnue — non planifiable";
+  const min = durees[0];
+  const max = durees[durees.length - 1];
+  return min === max
+    ? `Cycle d'environ ${min} jours`
+    : `Cycle de ${min} à ${max} jours selon la conduite`;
+}
+
 export default function EcranPlanifier() {
   const router = useRouter();
   // Arrivée depuis un guide : la spéculation est déjà choisie.
@@ -76,7 +95,8 @@ export default function EcranPlanifier() {
   const [dateSaisie, setDateSaisie] = useState("");
   const [marge, setMarge] = useState(MARGE_DEFAUT);
   const [itineraireId, setItineraireId] = useState<string | null>(null);
-  const { parSpeculation } = useItinerairesParSpeculation();
+  const { parSpeculation, chargement: chargementItineraires } =
+    useItinerairesParSpeculation();
 
   const [miseEnPlace, setMiseEnPlace] = useState<string | null>(null);
   const [calcul, setCalcul] = useState(false);
@@ -84,6 +104,8 @@ export default function EcranPlanifier() {
   useEffect(() => {
     supabase
       .from("speculations")
+      // duree_cycle_jours est chargée parce que le type la demande, mais elle
+      // ne sert plus au calcul : la durée vient des guides. Voir `duree`.
       .select("id, code, nom, icone, duree_cycle_jours")
       .order("nom")
       .then(({ data, error }) => {
@@ -105,16 +127,23 @@ export default function EcranPlanifier() {
     [itineraires, itineraireId],
   );
 
-  // Changer de production invalide le mode retenu. Un seul itinéraire est pris
-  // d'office : il n'y a pas de choix à poser.
-  const choisirSpeculation = useCallback(
-    (id: string) => {
-      setChoixId(id);
-      const liste = itinerairesDe(parSpeculation, id);
-      setItineraireId(liste.length === 1 ? liste[0].itineraire_id : null);
-    },
-    [parSpeculation],
-  );
+  // Changer de production invalide le mode retenu.
+  const choisirSpeculation = useCallback((id: string) => {
+    setChoixId(id);
+    setItineraireId(null);
+  }, []);
+
+  // Un guide unique est retenu d'office : il n'y a pas de choix à poser.
+  //
+  // Par effet et non dans `choisirSpeculation`, parce que la spéculation peut
+  // arriver toute choisie depuis un guide, sans passer par le sélecteur — et
+  // parce que la table des itinéraires se charge après le premier rendu. Le
+  // faire au clic seul laisserait ces deux chemins sans durée de calcul.
+  useEffect(() => {
+    if (itineraireId !== null) return;
+    const liste = itinerairesDe(parSpeculation, choixId);
+    if (liste.length === 1) setItineraireId(liste[0].itineraire_id);
+  }, [parSpeculation, choixId, itineraireId]);
 
   const evenementChoisi = useMemo(
     () => EVENEMENTS.find((e) => e.code === evenement) ?? null,
@@ -135,7 +164,29 @@ export default function EcranPlanifier() {
     }
   }, []);
 
-  const duree = choix?.duree_cycle_jours ?? null;
+  // LA DURÉE VIENT DU GUIDE RETENU, PAS DE LA SPÉCULATION.
+  //
+  // `speculations.duree_cycle_jours` est unique par spéculation : elle vaut 120
+  // pour le bovin d'embouche, en conduite intensive comme semi-intensive, alors
+  // que le second guide en annonce 180. Planifier sur cette valeur ferait
+  // démarrer un éleveur soixante jours trop tard — l'inverse exact de ce que
+  // cet écran promet. `duree_totale_jours` est portée par l'itinéraire, donc
+  // par le mode réellement choisi.
+  //
+  // La colonne de la spéculation n'est pas touchée : elle sert toujours à la
+  // création rapide d'un cycle, hors planification.
+  const duree = itineraireChoisi?.duree_totale_jours ?? null;
+
+  // Une spéculation sans guide chiffré ne peut pas être planifiée. Le dire,
+  // plutôt que de retomber en silence sur une autre durée : c'est ce silence
+  // qui produisait l'erreur qu'on vient de corriger.
+  const sansDuree =
+    choix !== null && !modeARenseigner && itineraires.length > 0 && duree === null;
+  // `chargementItineraires` et non `chargement` : la table des guides se charge
+  // séparément, et s'appuyer sur l'autre drapeau ferait clignoter « pas de
+  // guide » au montage, quand une spéculation arrive déjà choisie.
+  const sansGuide =
+    choix !== null && !chargementItineraires && itineraires.length === 0;
   const pret = choix !== null && dateIso !== null && duree !== null && !modeARenseigner;
 
   // La date de mise en place vient de la base, jamais d'un calcul local :
@@ -173,10 +224,33 @@ export default function EcranPlanifier() {
   const joursAvantMiseEnPlace = miseEnPlace ? joursEntre(miseEnPlace) : null;
   const tropTard = joursAvantMiseEnPlace !== null && joursAvantMiseEnPlace < 0;
 
+  // Les replis se mesurent avec la MÊME durée que le calcul principal : celle
+  // des guides. Les comparer sur duree_cycle_jours proposerait des spéculations
+  // qui ne tiennent pas réellement — on remplacerait une erreur par une autre.
+  // Quand plusieurs conduites existent, c'est la plus courte qui décide : c'est
+  // elle qui dit si la spéculation peut encore entrer dans le délai.
+  const speculationsSelonGuide = useMemo(
+    () =>
+      speculations.map((s) => {
+        const durees = itinerairesDe(parSpeculation, s.id)
+          .map((i) => i.duree_totale_jours)
+          .filter((d): d is number => d !== null);
+        return durees.length > 0
+          ? { ...s, duree_cycle_jours: Math.min(...durees) }
+          : { ...s, duree_cycle_jours: null };
+      }),
+    [speculations, parSpeculation],
+  );
+
   const replis = useMemo(() => {
     if (!tropTard || !dateIso) return [];
-    return speculationsQuiTiennent(speculations, dateIso, marge, choixId ?? undefined);
-  }, [tropTard, dateIso, speculations, marge, choixId]);
+    return speculationsQuiTiennent(
+      speculationsSelonGuide,
+      dateIso,
+      marge,
+      choixId ?? undefined,
+    );
+  }, [tropTard, dateIso, speculationsSelonGuide, marge, choixId]);
 
   const premiereVente = useMemo(
     () => (tropTard && duree !== null ? premiereDatePossible(duree, marge) : null),
@@ -229,9 +303,7 @@ export default function EcranPlanifier() {
                 <View style={styles.specTextes}>
                   <Text style={styles.specNom}>{s.nom}</Text>
                   <Text style={styles.specDuree}>
-                    {s.duree_cycle_jours
-                      ? `Cycle d'environ ${s.duree_cycle_jours} jours`
-                      : "Durée de cycle inconnue"}
+                    {libelleDuree(itinerairesDe(parSpeculation, s.id))}
                   </Text>
                 </View>
               </Pressable>
@@ -276,6 +348,14 @@ export default function EcranPlanifier() {
             ))}
           </View>
         </View>
+      ) : null}
+
+      {sansGuide || sansDuree ? (
+        <Text style={styles.ecart}>
+          {sansGuide
+            ? "Cette production n'a pas encore de guide technique : sa durée de cycle n'est pas connue, et la date de mise en place ne peut pas être calculée."
+            : "Ce guide n'indique pas de durée totale. La date de mise en place ne peut pas être calculée tant qu'elle manque."}
+        </Text>
       ) : null}
 
       {/* 2. Pour quand ? --------------------------------------------------- */}
@@ -343,11 +423,6 @@ export default function EcranPlanifier() {
           />
         ) : (
           <Resultat
-            ecartGuide={
-              itineraireChoisi?.duree_totale_jours && duree !== null
-                ? itineraireChoisi.duree_totale_jours - duree
-                : null
-            }
             miseEnPlace={miseEnPlace}
             jours={joursAvantMiseEnPlace}
             duree={duree!}
@@ -383,7 +458,6 @@ function Resultat({
   duree,
   marge,
   dateCible,
-  ecartGuide,
   onCreer,
 }: {
   miseEnPlace: string;
@@ -391,8 +465,6 @@ function Resultat({
   duree: number;
   marge: number;
   dateCible: string;
-  /** Jours d'écart entre le guide du mode choisi et la durée qui sert au calcul. */
-  ecartGuide: number | null;
   onCreer: () => void;
 }) {
   return (
@@ -417,19 +489,6 @@ function Resultat({
           valeur={marge === 0 ? "aucune" : `${marge} jours`}
         />
       </View>
-
-      {/* La planification s'appuie sur speculations.duree_cycle_jours, qui est
-          la même pour tous les modes de conduite. Quand le guide du mode
-          choisi annonce nettement plus long, le dire : se taire ferait partir
-          un éleveur trop tard, et c'est précisément ce que cet écran doit
-          empêcher. */}
-      {ecartGuide !== null && ecartGuide >= 15 ? (
-        <Text style={styles.ecart}>
-          Attention : le guide de cette conduite annonce {ecartGuide} jours de
-          plus que la durée de cycle utilisée pour ce calcul. Prévoyez de
-          démarrer plus tôt, ou augmentez la marge.
-        </Text>
-      ) : null}
 
       <Bouton titre="Créer ce cycle" onPress={onCreer} />
     </View>
@@ -574,6 +633,7 @@ const styles = StyleSheet.create({
   ligneLibelle: { fontSize: textes.petit, color: couleurs.attenue },
   ligneValeur: { fontSize: textes.petit, fontWeight: "700", color: couleurs.encre },
 
+  // Encart d'alerte douce, réutilisé pour les spéculations non planifiables.
   ecart: {
     fontSize: textes.petit,
     lineHeight: 22,
