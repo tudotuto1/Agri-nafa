@@ -15,6 +15,10 @@ web-build/
 android/
 ios/
 
+# Cache local du CLI Supabase — créé par un simple `supabase --version`,
+# sans rapport avec le contenu du projet.
+supabase/.temp/
+
 # Divers
 *.log
 npm-debug.*
