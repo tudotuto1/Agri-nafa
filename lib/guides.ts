@@ -95,7 +95,34 @@ export type Guide = {
   icone: string | null;
   unite_defaut: string;
   nb_etapes: number;
+  /**
+   * intensif | semi_intensif | extensif, ou null hors élevage. Une même
+   * spéculation peut porter plusieurs itinéraires qui ne diffèrent que par là :
+   * le bovin d'embouche a 120 jours en intensif et 180 en semi-intensif.
+   */
+  mode_conduite: string | null;
 };
+
+/**
+ * Libellé lisible d'un mode de conduite.
+ *
+ * Les trois valeurs de la contrainte CHECK sont couvertes, `extensif` compris
+ * bien qu'aucun guide ne l'utilise encore : le jour où il arrive, l'écran ne
+ * doit pas afficher un identifiant de colonne à un éleveur. Une valeur
+ * inattendue est mise en forme plutôt que rendue telle quelle — jamais de
+ * `semi_intensif` à l'écran.
+ */
+export function libelleModeConduite(mode: string | null | undefined): string | null {
+  if (!mode) return null;
+  const connus: Record<string, string> = {
+    intensif: "Intensif",
+    semi_intensif: "Semi-intensif",
+    extensif: "Extensif",
+  };
+  if (connus[mode]) return connus[mode];
+  const mots = mode.replace(/_/g, "-");
+  return mots.charAt(0).toUpperCase() + mots.slice(1);
+}
 
 export type MoisSaisonnalite = {
   mois: number;

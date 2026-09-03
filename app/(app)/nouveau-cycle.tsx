@@ -17,6 +17,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { Bouton, Ecran, SousTitre, Titre } from "@/components/ui";
 import { couleurs, espaces, rayons, textes } from "@/constants/theme";
 import { dateEnFrancais } from "@/lib/format";
+import { libelleModeConduite } from "@/lib/guides";
 
 export default function EcranNouveauCycle() {
   const router = useRouter();
@@ -25,12 +26,15 @@ export default function EcranNouveauCycle() {
     date_debut: dateDebut,
     date_cible_marche: dateCible,
     evenement_cible: evenement,
+    mode_conduite: mode,
   } = useLocalSearchParams<{
     speculation_id?: string;
     speculation_nom?: string;
+    itineraire_id?: string;
     date_debut?: string;
     date_cible_marche?: string;
     evenement_cible?: string;
+    mode_conduite?: string;
   }>();
 
   const plan = Boolean(dateDebut && dateCible);
@@ -54,6 +58,9 @@ export default function EcranNouveauCycle() {
           <Ligne libelle="Production" valeur={speculationNom ?? "—"} />
           <Ligne libelle="Mise en place" valeur={dateEnFrancais(dateDebut!)} />
           <Ligne libelle="Vente visée" valeur={dateEnFrancais(dateCible!)} />
+          {mode ? (
+            <Ligne libelle="Conduite" valeur={libelleModeConduite(mode) ?? mode} />
+          ) : null}
           {evenement ? <Ligne libelle="Occasion" valeur={evenement} /> : null}
         </View>
       ) : null}

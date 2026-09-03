@@ -28,6 +28,12 @@ import { useAuth } from "@/lib/auth";
 import { ajouter } from "@/lib/file-attente";
 import { messageErreurLisible } from "@/lib/erreurs";
 import { supabase, type Speculation } from "@/lib/supabase";
+import { libelleModeConduite } from "@/lib/guides";
+import {
+  demandeUnChoix,
+  itinerairesDe,
+  useItinerairesParSpeculation,
+} from "@/lib/modes-conduite";
 
 type TypeCycle = "culture" | "elevage";
 
@@ -45,6 +51,8 @@ export default function EcranPremierCycle() {
   const [chargement, setChargement] = useState(true);
   const [choix, setChoix] = useState<Speculation | null>(null);
   const [effectif, setEffectif] = useState("");
+  const [itineraireId, setItineraireId] = useState<string | null>(null);
+  const { parSpeculation } = useItinerairesParSpeculation();
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
 
@@ -74,13 +82,28 @@ export default function EcranPremierCycle() {
     setType(nouveau);
     setChoix(null);
     setEffectif("");
+    setItineraireId(null);
   }
+
+  // Les itinéraires d'une spéculation ne valent que pour elle : changer de
+  // production efface le mode choisi, sinon on rattacherait un cycle de tomate
+  // à une conduite de bovin. Un seul itinéraire est retenu d'office — il n'y a
+  // pas de choix à poser, et une étape de plus serait une friction gratuite.
+  function choisirSpeculation(speculation: Speculation) {
+    setChoix(speculation);
+    const liste = itinerairesDe(parSpeculation, speculation.id);
+    setItineraireId(liste.length === 1 ? liste[0].itineraire_id : null);
+  }
+
+  const itineraires = itinerairesDe(parSpeculation, choix?.id);
+  const modeARenseigner =
+    demandeUnChoix(parSpeculation, choix?.id) && itineraireId === null;
 
   // Un cycle d'élevage sans effectif de départ ne permet aucun suivi de
   // mortalité — la contrainte chk_effectif_elevage le refuse d'ailleurs en base.
   const effectifRequis = type === "elevage";
   const effectifValide = !effectifRequis || Number(effectif) > 0;
-  const pret = choix !== null && effectifValide;
+  const pret = choix !== null && effectifValide && !modeARenseigner;
 
   async function creer() {
     if (!choix || !session?.user || !pret) return;
@@ -102,6 +125,9 @@ export default function EcranPremierCycle() {
       nom: choix.nom,
       type,
       speculation_id: choix.id,
+      // Null quand la spéculation n'a qu'un guide : rien n'a été choisi, et
+      // l'itinéraire se retrouve alors par speculation_id.
+      itineraire_id: itineraireId,
       date_debut: debut.toISOString().slice(0, 10),
       date_fin_prevue: finPrevue ? finPrevue.toISOString().slice(0, 10) : null,
       effectif_initial: effectifRequis ? Number(effectif) : null,
@@ -194,10 +220,37 @@ export default function EcranPremierCycle() {
                 : undefined
             }
             selectionnee={choix?.id === speculation.id}
-            onPress={() => setChoix(speculation)}
+            onPress={() => choisirSpeculation(speculation)}
           />
         ))}
       </View>
+
+      {/* Le mode de conduite n'est demandé que là où il existe vraiment
+          plusieurs itinéraires — aujourd'hui le seul bovin d'embouche. */}
+      {itineraires.length > 1 ? (
+        <View style={styles.bloc}>
+          <SousTitre>Comment allez-vous les conduire ?</SousTitre>
+          <Aide>
+            Le mode de conduite change la durée du cycle et les étapes à suivre.
+            Il détermine le guide qui accompagnera ce cycle.
+          </Aide>
+          <View style={styles.modes}>
+            {itineraires.map((it) => (
+              <Carte
+                key={it.itineraire_id}
+                titre={libelleModeConduite(it.mode_conduite) ?? it.titre}
+                sousTitre={
+                  it.duree_totale_jours
+                    ? `Environ ${it.duree_totale_jours} jours`
+                    : undefined
+                }
+                selectionnee={itineraireId === it.itineraire_id}
+                onPress={() => setItineraireId(it.itineraire_id)}
+              />
+            ))}
+          </View>
+        </View>
+      ) : null}
 
       {effectifRequis ? (
         <Champ
@@ -228,6 +281,13 @@ const styles = StyleSheet.create({
   },
   basculeBouton: {
     flex: 1,
+  },
+  bloc: {
+    gap: espaces.sm,
+    marginTop: espaces.lg,
+  },
+  modes: {
+    gap: espaces.sm,
   },
   liste: {
     gap: espaces.sm,

@@ -27,12 +27,7 @@ import {
   TAILLE_LISTE,
 } from "@/components/illustration-espece";
 import { formaterFcfa } from "@/lib/format";
-import {
-  LIBELLES_DIFFICULTE,
-  formaterQuantite,
-  nombre,
-  type Guide,
-} from "@/lib/guides";
+import { LIBELLES_DIFFICULTE, formaterQuantite, libelleModeConduite, nombre, type Guide } from "@/lib/guides";
 import { supabase } from "@/lib/supabase";
 
 type SpeculationSansGuide = {
@@ -146,6 +141,7 @@ function CarteGuide({ guide, onPress }: { guide: Guide; onPress: () => void }) {
   const max = nombre(guide.rendement_max_ha);
   const cout = nombre(guide.cout_indicatif_ha);
   const unite = guide.unite_rendement ?? guide.unite_defaut;
+  const mode = libelleModeConduite(guide.mode_conduite);
 
   return (
     <Pressable
@@ -163,6 +159,15 @@ function CarteGuide({ guide, onPress }: { guide: Guide; onPress: () => void }) {
         <View style={styles.carteTextes}>
           <Text style={styles.carteTitre}>{guide.titre}</Text>
           <Text style={styles.carteSpeculation}>{guide.speculation_nom}</Text>
+          {/* Deux itinéraires peuvent porter la même spéculation et ne
+              différer que par la conduite — 120 jours en intensif, 180 en
+              semi-intensif pour le bovin. Sans ce badge, les deux cartes se
+              ressemblent assez pour qu'on en ouvre une au hasard. */}
+          {mode ? (
+            <View style={styles.badgeMode}>
+              <Text style={styles.badgeModeTexte}>{mode}</Text>
+            </View>
+          ) : null}
         </View>
       </View>
 
@@ -224,7 +229,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: espaces.md,
   },
-  carteTextes: { flex: 1, gap: 2 },
+  carteTextes: { flex: 1, gap: espaces.xs },
+  badgeMode: {
+    alignSelf: "flex-start",
+    paddingHorizontal: espaces.sm,
+    paddingVertical: 3,
+    borderRadius: rayons.rond,
+    backgroundColor: couleurs.or,
+  },
+  badgeModeTexte: {
+    fontSize: textes.petit,
+    fontWeight: "700",
+    // Encre sur or : le blanc n'y donnerait que 1,47.
+    color: couleurs.encre,
+  },
   carteTitre: {
     fontSize: textes.sousTitre,
     fontWeight: "700",

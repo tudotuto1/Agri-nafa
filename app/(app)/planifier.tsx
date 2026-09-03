@@ -53,6 +53,12 @@ import {
   type SpeculationPlanifiable,
 } from "@/lib/planification";
 import { supabase } from "@/lib/supabase";
+import { libelleModeConduite } from "@/lib/guides";
+import {
+  demandeUnChoix,
+  itinerairesDe,
+  useItinerairesParSpeculation,
+} from "@/lib/modes-conduite";
 
 export default function EcranPlanifier() {
   const router = useRouter();
@@ -69,6 +75,8 @@ export default function EcranPlanifier() {
   const [evenement, setEvenement] = useState<string | null>(null);
   const [dateSaisie, setDateSaisie] = useState("");
   const [marge, setMarge] = useState(MARGE_DEFAUT);
+  const [itineraireId, setItineraireId] = useState<string | null>(null);
+  const { parSpeculation } = useItinerairesParSpeculation();
 
   const [miseEnPlace, setMiseEnPlace] = useState<string | null>(null);
   const [calcul, setCalcul] = useState(false);
@@ -88,6 +96,24 @@ export default function EcranPlanifier() {
   const choix = useMemo(
     () => speculations.find((s) => s.id === choixId) ?? null,
     [speculations, choixId],
+  );
+
+  const itineraires = itinerairesDe(parSpeculation, choixId);
+  const modeARenseigner = demandeUnChoix(parSpeculation, choixId) && itineraireId === null;
+  const itineraireChoisi = useMemo(
+    () => itineraires.find((i) => i.itineraire_id === itineraireId) ?? null,
+    [itineraires, itineraireId],
+  );
+
+  // Changer de production invalide le mode retenu. Un seul itinéraire est pris
+  // d'office : il n'y a pas de choix à poser.
+  const choisirSpeculation = useCallback(
+    (id: string) => {
+      setChoixId(id);
+      const liste = itinerairesDe(parSpeculation, id);
+      setItineraireId(liste.length === 1 ? liste[0].itineraire_id : null);
+    },
+    [parSpeculation],
   );
 
   const evenementChoisi = useMemo(
@@ -110,7 +136,7 @@ export default function EcranPlanifier() {
   }, []);
 
   const duree = choix?.duree_cycle_jours ?? null;
-  const pret = choix !== null && dateIso !== null && duree !== null;
+  const pret = choix !== null && dateIso !== null && duree !== null && !modeARenseigner;
 
   // La date de mise en place vient de la base, jamais d'un calcul local :
   // public.date_mise_en_place est la source de vérité, et deux soustractions
@@ -192,7 +218,7 @@ export default function EcranPlanifier() {
                 key={s.id}
                 accessibilityRole="button"
                 accessibilityState={{ selected: choixId === s.id }}
-                onPress={() => setChoixId(s.id)}
+                onPress={() => choisirSpeculation(s.id)}
                 style={({ pressed }) => [
                   styles.carteSpec,
                   choixId === s.id && styles.carteSpecChoisie,
@@ -213,6 +239,44 @@ export default function EcranPlanifier() {
           </View>
         )}
       </View>
+
+      {/* Mode de conduite — posé seulement là où plusieurs itinéraires
+          existent, et avant la date : c'est lui qui fixe la durée du cycle. */}
+      {itineraires.length > 1 ? (
+        <View style={styles.bloc}>
+          <SousTitre>Quelle conduite ?</SousTitre>
+          <Aide>
+            Cette production a plusieurs itinéraires. Le mode choisi détermine
+            le guide associé au cycle, et la durée n&apos;est pas la même.
+          </Aide>
+          <View style={styles.liste}>
+            {itineraires.map((it) => (
+              <Pressable
+                key={it.itineraire_id}
+                accessibilityRole="button"
+                accessibilityState={{ selected: itineraireId === it.itineraire_id }}
+                onPress={() => setItineraireId(it.itineraire_id)}
+                style={({ pressed }) => [
+                  styles.carteSpec,
+                  itineraireId === it.itineraire_id && styles.carteSpecChoisie,
+                  pressed && { opacity: 0.85 },
+                ]}
+              >
+                <View style={styles.specTextes}>
+                  <Text style={styles.specNom}>
+                    {libelleModeConduite(it.mode_conduite) ?? it.titre}
+                  </Text>
+                  <Text style={styles.specDuree}>
+                    {it.duree_totale_jours
+                      ? `Guide d'environ ${it.duree_totale_jours} jours`
+                      : it.titre}
+                  </Text>
+                </View>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+      ) : null}
 
       {/* 2. Pour quand ? --------------------------------------------------- */}
       <View style={styles.bloc}>
@@ -275,10 +339,15 @@ export default function EcranPlanifier() {
             premiereVente={premiereVente}
             replis={replis}
             marge={marge}
-            onChoisir={(id) => setChoixId(id)}
+            onChoisir={choisirSpeculation}
           />
         ) : (
           <Resultat
+            ecartGuide={
+              itineraireChoisi?.duree_totale_jours && duree !== null
+                ? itineraireChoisi.duree_totale_jours - duree
+                : null
+            }
             miseEnPlace={miseEnPlace}
             jours={joursAvantMiseEnPlace}
             duree={duree!}
@@ -290,6 +359,8 @@ export default function EcranPlanifier() {
                 params: {
                   speculation_id: choix!.id,
                   speculation_nom: choix!.nom,
+                  itineraire_id: itineraireChoisi?.itineraire_id ?? "",
+                  mode_conduite: itineraireChoisi?.mode_conduite ?? "",
                   date_debut: miseEnPlace,
                   date_cible_marche: dateIso!,
                   evenement_cible: evenementChoisi?.libelle ?? "",
@@ -312,6 +383,7 @@ function Resultat({
   duree,
   marge,
   dateCible,
+  ecartGuide,
   onCreer,
 }: {
   miseEnPlace: string;
@@ -319,6 +391,8 @@ function Resultat({
   duree: number;
   marge: number;
   dateCible: string;
+  /** Jours d'écart entre le guide du mode choisi et la durée qui sert au calcul. */
+  ecartGuide: number | null;
   onCreer: () => void;
 }) {
   return (
@@ -343,6 +417,19 @@ function Resultat({
           valeur={marge === 0 ? "aucune" : `${marge} jours`}
         />
       </View>
+
+      {/* La planification s'appuie sur speculations.duree_cycle_jours, qui est
+          la même pour tous les modes de conduite. Quand le guide du mode
+          choisi annonce nettement plus long, le dire : se taire ferait partir
+          un éleveur trop tard, et c'est précisément ce que cet écran doit
+          empêcher. */}
+      {ecartGuide !== null && ecartGuide >= 15 ? (
+        <Text style={styles.ecart}>
+          Attention : le guide de cette conduite annonce {ecartGuide} jours de
+          plus que la durée de cycle utilisée pour ce calcul. Prévoyez de
+          démarrer plus tôt, ou augmentez la marge.
+        </Text>
+      ) : null}
 
       <Bouton titre="Créer ce cycle" onPress={onCreer} />
     </View>
@@ -487,6 +574,17 @@ const styles = StyleSheet.create({
   ligneLibelle: { fontSize: textes.petit, color: couleurs.attenue },
   ligneValeur: { fontSize: textes.petit, fontWeight: "700", color: couleurs.encre },
 
+  ecart: {
+    fontSize: textes.petit,
+    lineHeight: 22,
+    color: couleurs.encre,
+    backgroundColor: "#FFF8E1",
+    borderLeftWidth: 5,
+    borderLeftColor: couleurs.or,
+    borderRadius: rayons.sm,
+    padding: espaces.md,
+    marginBottom: espaces.sm,
+  },
   tropTard: {
     marginTop: espaces.lg,
     padding: espaces.lg,
