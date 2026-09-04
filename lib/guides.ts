@@ -380,3 +380,56 @@ export const MOIS_LONGS = [
   "janvier", "février", "mars", "avril", "mai", "juin",
   "juillet", "août", "septembre", "octobre", "novembre", "décembre",
 ];
+
+// -----------------------------------------------------------------------------
+// Questions d'exemple pour l'assistant.
+//
+// Devant un champ vide, beaucoup de producteurs ne savent pas quoi demander —
+// et l'assistant ne répond que depuis le guide, donc une question au hasard a
+// toutes les chances d'être refusée. Les suggestions sont donc TIRÉES DU
+// CONTENU réellement présent : proposer « quelle dose d'engrais » sur un guide
+// sans intrants chiffrés serait organiser sa propre déception.
+//
+// Ordre voulu : du plus concret au plus général. Un producteur qui hésite
+// prend la première.
+// -----------------------------------------------------------------------------
+export function questionsSuggerees(
+  guide: Pick<Guide, "base_calcul" | "mois_semis_conseilles" | "duree_totale_jours"> | null,
+  etapes: EtapeGuide[],
+): string[] {
+  if (!guide) return [];
+  const questions: string[] = [];
+  const regles = reglesBase(guide.base_calcul);
+
+  // 1. Une dose, sur un intrant réellement nommé dans le guide.
+  const intrant = etapes.flatMap((e) => e.intrants ?? []).find((i) => i.nom);
+  if (intrant) {
+    const taille = formaterTaille(guide.base_calcul, regles.defaut);
+    questions.push(`Quelle quantité de ${intrant.nom.toLowerCase()} pour ${taille} ?`);
+  }
+
+  // 2. Une erreur à éviter, seulement si le guide en documente.
+  const avecErreurs = etapes.find((e) => (e.erreurs_frequentes ?? []).length > 0);
+  if (avecErreurs) {
+    questions.push(`Quelles erreurs éviter à l'étape « ${avecErreurs.titre} » ?`);
+  }
+
+  // 3. Le calendrier, si le guide porte des mois de semis ou une durée.
+  if ((guide.mois_semis_conseilles ?? []).length > 0) {
+    questions.push("Quel est le meilleur moment pour démarrer ?");
+  } else if (guide.duree_totale_jours) {
+    questions.push("Combien de temps faut-il avant de pouvoir vendre ?");
+  }
+
+  // Replis, seulement pour compléter : ils restent dans le périmètre du guide.
+  const replis = [
+    "Comment reconnaître le bon moment pour récolter ?",
+    "Quel matériel faut-il prévoir ?",
+  ];
+  for (const r of replis) {
+    if (questions.length >= 3) break;
+    questions.push(r);
+  }
+
+  return questions.slice(0, 3);
+}

@@ -266,6 +266,8 @@ export default function EcranDepenseVocale() {
 
       <Erreur message={erreur} />
 
+      {etape.nom === "pret" ? <Modele /> : null}
+
       {etape.nom === "pret" || etape.nom === "enregistre" ? (
         <Micro
           enregistre={etape.nom === "enregistre"}
@@ -302,6 +304,68 @@ export default function EcranDepenseVocale() {
 
       <View style={styles.pied} />
     </Ecran>
+  );
+}
+
+// -----------------------------------------------------------------------------
+// La phrase modèle.
+//
+// Un exemple concret vaut mieux qu'une liste de règles : on ne lit pas des
+// consignes avant de parler, on imite ce qu'on voit. Chaque segment porte son
+// étiquette dessous, en or, pour que la structure de la phrase se lise d'un
+// coup — quand, action, quoi, combien.
+//
+// Les segments s'enroulent sur plusieurs lignes si l'écran est étroit : c'est
+// pour ça que chaque bloc est autonome plutôt qu'une seule ligne alignée au
+// caractère près, qui se briserait sur un petit téléphone.
+// -----------------------------------------------------------------------------
+const SEGMENTS: { mots: string; etiquette: string | null }[] = [
+  { mots: "Aujourd'hui", etiquette: "quand" },
+  { mots: "j'ai acheté", etiquette: "action" },
+  { mots: "trois sacs d'engrais", etiquette: "quoi" },
+  { mots: "pour", etiquette: null },
+  { mots: "vingt-cinq mille francs", etiquette: "combien" },
+];
+
+const CONSEILS = [
+  "Parlez près du téléphone, à hauteur de la bouche.",
+  "Dites le montant en entier : « vingt-cinq mille francs ».",
+  "Éloignez-vous du bruit — moteur, radio, vent.",
+];
+
+function Modele() {
+  return (
+    <View style={styles.modele}>
+      <Text style={styles.modeleTitre}>Dites quelque chose comme</Text>
+
+      <View
+        style={styles.phrase}
+        accessible
+        accessibilityLabel={
+          "Exemple : " + SEGMENTS.map((s) => s.mots).join(" ")
+        }
+      >
+        {SEGMENTS.map((seg) => (
+          <View key={seg.mots} style={styles.segment}>
+            <Text style={styles.segmentMots}>{seg.mots}</Text>
+            {/* « pour » est un mot de liaison : pas d'étiquette, donc pas de
+                liseré. Le marquer laisserait croire qu'il porte une des
+                quatre informations attendues. */}
+            {seg.etiquette ? (
+              <Text style={styles.segmentEtiquette}>└─ {seg.etiquette}</Text>
+            ) : null}
+          </View>
+        ))}
+      </View>
+
+      <View style={styles.conseils}>
+        {CONSEILS.map((c) => (
+          <Text key={c} style={styles.conseil}>
+            • {c}
+          </Text>
+        ))}
+      </View>
+    </View>
   );
 }
 
@@ -515,6 +579,42 @@ function minutage(secondes: number): string {
 const styles = StyleSheet.create({
   retour: { minHeight: CIBLE_TACTILE, justifyContent: "center" },
   retourTexte: { fontSize: textes.corps, color: couleurs.vertFonce, fontWeight: "600" },
+
+  modele: {
+    marginTop: espaces.md,
+    padding: espaces.md,
+    borderRadius: rayons.md,
+    backgroundColor: couleurs.papier,
+    borderWidth: 1,
+    borderColor: couleurs.ligne,
+    gap: espaces.sm,
+  },
+  modeleTitre: { fontSize: textes.petit, color: couleurs.attenue },
+  phrase: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "flex-start",
+    columnGap: espaces.sm,
+    rowGap: espaces.xs,
+  },
+  segment: { alignItems: "flex-start" },
+  segmentMots: {
+    fontSize: textes.corps,
+    fontWeight: "700",
+    color: couleurs.encre,
+  },
+  // Or sur papier : 1,72 seulement, illisible pour du texte. L'étiquette est
+  // donc en encre, et c'est un liseré d'or qui porte la couleur.
+  segmentEtiquette: {
+    fontSize: textes.petit,
+    color: couleurs.encre,
+    borderTopWidth: 3,
+    borderTopColor: couleurs.or,
+    paddingTop: 2,
+    alignSelf: "stretch",
+  },
+  conseils: { gap: espaces.xs, marginTop: espaces.xs },
+  conseil: { fontSize: textes.petit, lineHeight: 22, color: couleurs.attenue },
 
   zoneMicro: { alignItems: "center", gap: espaces.md, paddingVertical: espaces.xl },
   micro: {
