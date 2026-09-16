@@ -29,6 +29,7 @@ import {
   TAILLE_LISTE,
 } from "@/components/illustration-espece";
 import { TRAMES, type TonEntete } from "@/components/illustrations-vides";
+import { useReserveBasse } from "@/components/reserve-basse";
 
 // -----------------------------------------------------------------------------
 type EcranProps = {
@@ -37,10 +38,18 @@ type EcranProps = {
 };
 
 export function Ecran({ children, refreshControl }: EcranProps) {
+  // Hauteur occupée par le bouton flottant de l'assistant, là où il existe.
+  // Sans elle, il recouvrirait le dernier bouton de l'écran — voir
+  // components/reserve-basse.tsx.
+  const reserve = useReserveBasse();
+
   return (
     <SafeAreaView style={styles.ecran} edges={["top", "bottom"]}>
       <ScrollView
-        contentContainerStyle={styles.ecranContenu}
+        contentContainerStyle={[
+          styles.ecranContenu,
+          reserve > 0 && { paddingBottom: espaces.lg + reserve },
+        ]}
         keyboardShouldPersistTaps="handled"
         refreshControl={refreshControl}
       >
