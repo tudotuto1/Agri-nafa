@@ -33,11 +33,28 @@ import { createContext, useContext, type ReactNode } from "react";
 
 import { CIBLE_TACTILE, espaces } from "@/constants/theme";
 
+// -----------------------------------------------------------------------------
+// L'ENCOMBREMENT DU BOUTON, DÉFINI UNE SEULE FOIS
+//
+// Ces deux mesures sont la géométrie réelle du bouton flottant : c'est d'elles
+// que `bouton-assistant.tsx` tire sa taille et son ancrage, et c'est d'elles
+// que la réserve ci-dessous est calculée. La première version les redérivait
+// des deux côtés — elles coïncidaient, mais rien ne l'imposait, et agrandir le
+// bouton aurait laissé la réserve derrière sans qu'aucun contrôle ne le voie.
+// -----------------------------------------------------------------------------
+
+/** Diamètre du bouton flottant. Une cible tactile, pas moins. */
+export const TAILLE_BOUTON_FLOTTANT = CIBLE_TACTILE;
+
+/** Son retrait par rapport au bord droit et au bas de la zone sûre. */
+export const MARGE_BOUTON_FLOTTANT = espaces.lg;
+
 /**
- * Hauteur du bouton flottant, plus son décalage par rapport au bas, plus un
- * intervalle pour que le dernier bouton de l'écran ne le frôle pas.
+ * Hauteur à libérer sous le contenu : le bouton, son retrait, et un intervalle
+ * pour que le dernier bouton de l'écran ne le frôle pas.
  */
-export const RESERVE_BOUTON_FLOTTANT = CIBLE_TACTILE + espaces.lg + espaces.md;
+export const RESERVE_BOUTON_FLOTTANT =
+  TAILLE_BOUTON_FLOTTANT + MARGE_BOUTON_FLOTTANT + espaces.md;
 
 const ContexteReserve = createContext(0);
 

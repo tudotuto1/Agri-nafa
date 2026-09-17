@@ -60,7 +60,9 @@ import { FormulaireAssistant } from "@/components/assistant";
 import { IllustrationEspece, TAILLE_LISTE } from "@/components/illustration-espece";
 import {
   FournisseurReserveBasse,
+  MARGE_BOUTON_FLOTTANT,
   RESERVE_BOUTON_FLOTTANT,
+  TAILLE_BOUTON_FLOTTANT,
 } from "@/components/reserve-basse";
 import { Aide, Bouton, Erreur, Squelette } from "@/components/ui";
 import { CIBLE_TACTILE, couleurs, espaces, rayons, textes } from "@/constants/theme";
@@ -79,6 +81,17 @@ type GuideChoisissable = {
   mois_semis_conseilles: number[] | null;
   duree_totale_jours: number | null;
 };
+
+/**
+ * Encombrement du bouton flottant, réexporté ici parce que c'est le fichier du
+ * bouton qu'on vient lire quand on se demande la place qu'il prend. La valeur
+ * est définie dans reserve-basse.tsx, d'où le style ci-dessous la tire aussi :
+ * une seule source, pas deux qui s'accordent par chance.
+ *
+ * `Ecran` l'applique déjà à tous les écrans du groupe (app) — l'écrire une
+ * seconde fois sur un écran donné doublerait la marge.
+ */
+export { RESERVE_BOUTON_FLOTTANT };
 
 // `titre` n'y figure pas : les cartes montrent le nom de la spéculation et son
 // mode de conduite, jamais le libellé long. Les trois dernières colonnes ne
@@ -283,7 +296,7 @@ export function BoutonAssistant({ children }: { children: ReactNode }) {
             onPress={() => setOuvert(true)}
             style={({ pressed }) => [
               styles.flottant,
-              { bottom: insets.bottom + espaces.lg },
+              { bottom: insets.bottom + MARGE_BOUTON_FLOTTANT },
               pressed && styles.flottantPresse,
             ]}
           >
@@ -459,9 +472,11 @@ const styles = StyleSheet.create({
 
   flottant: {
     position: "absolute",
-    right: espaces.lg,
-    width: CIBLE_TACTILE,
-    height: CIBLE_TACTILE,
+    // Mêmes constantes que la réserve calculée dans reserve-basse.tsx :
+    // agrandir le bouton déplace l'une et l'autre du même geste.
+    right: MARGE_BOUTON_FLOTTANT,
+    width: TAILLE_BOUTON_FLOTTANT,
+    height: TAILLE_BOUTON_FLOTTANT,
     borderRadius: rayons.rond,
     backgroundColor: couleurs.vertFonce,
     alignItems: "center",
